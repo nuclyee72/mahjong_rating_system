@@ -14,6 +14,9 @@ let RANKING_VIEW_MODE = "pt"; // "pt" | "season"
 let TOURNAMENT_STATS = {};    // { [name]: { games, sumPosPt } }
 let SEASON_SUMMARY = [];      // 시즌 점수용 표 데이터
 
+let ARCHIVE_VIEW_MODE = "ranking"; // "ranking" | "stats"
+let archiveStatsChart = null; // 아카이브 개인 통계용 차트
+
 
 // ===== 개인 레이팅(전체 등수) 정렬 상태 =====
 let RANKING_SORT = { key: "total_pt", dir: "desc" }; // 기본: 총 pt 내림차순
@@ -157,7 +160,7 @@ function calculateSeasonScore(totalPt, games, tJoin, tSum) {
 // ======================= 공통 렌더링 함수 =======================
 
 // 1. 대국 기록 리스트 렌더링 (개인전, 아카이브, 대회전)
-// options: { onDelete: async (id) => { ... } }
+// options: { onDelete: async (id) => { ... }, useIndexNumbering: bool }
 function renderGameList(tbodyId, games, options = {}) {
   const tbody = document.getElementById(tbodyId);
   if (!tbody) return;
@@ -168,7 +171,7 @@ function renderGameList(tbodyId, games, options = {}) {
     return;
   }
 
-  games.forEach((g) => {
+  games.forEach((g, index) => {
     const scores = [
       Number(g.player1_score), Number(g.player2_score),
       Number(g.player3_score), Number(g.player4_score),
@@ -186,9 +189,10 @@ function renderGameList(tbodyId, games, options = {}) {
 
     const tr = document.createElement("tr");
 
-    // ID, Time
+    // ID, Time (use index if useIndexNumbering is true)
+    const displayId = options.useIndexNumbering ? (index + 1) : (g.id || "");
     tr.innerHTML = `
-      <td>${g.id || ""}</td>
+      <td>${displayId}</td>
       <td>${formatKoreanTime(g.created_at)}</td>
       <td></td><td></td><td></td><td></td>
       <td></td>
@@ -765,9 +769,188 @@ async function loadPlayerBadgesForStats(name) {
 
 function setupArchiveView() {
   const asel = document.getElementById("archive-select");
-  const psel = document.getElementById("archive-player-select");
   if (asel) asel.addEventListener("change", () => loadArchiveGames(asel.value));
+
+  // 아카이브 제목 클릭 토글
+  setupArchiveRankingTitleToggle();
+
+  // 아카이브 개인 통계 플레이어 선택
+  const psel = document.getElementById("archive-stats-player-select");
   if (psel) psel.addEventListener("change", () => renderArchiveStatsForPlayer(psel.value));
+}
+
+// 아카이브 제목 클릭 토글
+function setupArchiveRankingTitleToggle() {
+  const title = document.getElementById("archive-ranking-title");
+  if (!title) return;
+
+  title.style.cursor = "pointer";
+  title.addEventListener("click", () => {
+    ARCHIVE_VIEW_MODE = ARCHIVE_VIEW_MODE === "ranking" ? "stats" : "ranking";
+    renderArchiveView();
+  });
+}
+
+// 아카이브 뷰 렌더링 (랭킹 또는 개인 통계)
+function renderArchiveView() {
+  const rankingWrap = document.getElementById("archive-ranking-wrap");
+  const statsWrap = document.getElementById("archive-stats-wrap");
+  const title = document.getElementById("archive-ranking-title");
+
+  if (ARCHIVE_VIEW_MODE === "ranking") {
+    if (rankingWrap) rankingWrap.style.display = "block";
+    if (statsWrap) statsWrap.style.display = "none";
+    if (title) title.textContent = "전체 등수 (아카이브)";
+  } else {
+    if (rankingWrap) rankingWrap.style.display = "none";
+    if (statsWrap) statsWrap.style.display = "block";
+    if (title) title.textContent = "개인별 통계 (아카이브)";
+    updateArchiveStatsPlayerSelect();
+  }
+}
+
+// 아카이브 개인 통계 플레이어 선택 업데이트
+function updateArchiveStatsPlayerSelect() {
+  const select = document.getElementById("archive-stats-player-select");
+  if (!select) return;
+
+  const prev = select.value;
+  select.innerHTML = '<option value="">플레이어를 선택하세요</option>';
+
+  const sorted = [...ARCHIVE_PLAYER_SUMMARY].sort((a, b) => b.total_pt - a.total_pt);
+
+  sorted.forEach(p => {
+    const opt = document.createElement("option");
+    opt.value = p.name;
+    opt.textContent = `${p.name} (${p.games}판, ${p.total_pt.toFixed(1)}pt)`;
+    select.appendChild(opt);
+  });
+
+  if (prev && sorted.some(p => p.name === prev)) {
+    select.value = prev;
+    renderArchiveStatsForPlayer(prev);
+  } else {
+    renderArchiveStatsForPlayer("");
+  }
+}
+
+// 아카이브 그래프 렌더링
+function renderArchiveHistoryGraph(name, range) {
+  const canvas = document.getElementById("archive-stats-daily-chart");
+  if (!canvas) return;
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  const detail = computePlayerDetailStats(name, CURRENT_ARCHIVE_GAMES);
+  if (!detail.recent || !detail.recent.length) {
+    if (archiveStatsChart) {
+      archiveStatsChart.destroy();
+      archiveStatsChart = null;
+    }
+    return;
+  }
+
+  // 누적 pt 계산
+  const games = CURRENT_ARCHIVE_GAMES.slice().sort((a, b) => {
+    const aTime = new Date(a.created_at).getTime();
+    const bTime = new Date(b.created_at).getTime();
+    return aTime - bTime;
+  });
+
+  let cumulative = 0;
+  const dataPoints = [];
+
+  games.forEach(g => {
+    const scores = [Number(g.player1_score), Number(g.player2_score), Number(g.player3_score), Number(g.player4_score)];
+    const names = [g.player1_name, g.player2_name, g.player3_name, g.player4_name].map(n => (n || "").trim());
+    const idx = names.indexOf(name);
+    if (idx === -1) return;
+
+    const pts = calcPts(scores);
+    cumulative += pts[idx];
+
+    const order = scores.map((s, i) => ({ s, i })).sort((a, b) => b.s - a.s);
+    const ranks = [0, 0, 0, 0];
+    order.forEach((o, pos) => ranks[o.i] = pos + 1);
+
+    dataPoints.push({
+      time: new Date(g.created_at),
+      pt: cumulative,
+      rank: ranks[idx]
+    });
+  });
+
+  if (!dataPoints.length) {
+    if (archiveStatsChart) {
+      archiveStatsChart.destroy();
+      archiveStatsChart = null;
+    }
+    return;
+  }
+
+  const labels = dataPoints.map(p => formatKoreanTime(p.time.toISOString()).substring(5));
+  const ptData = dataPoints.map(p => p.pt.toFixed(1));
+  const rankData = dataPoints.map(p => p.rank);
+
+  // 등수 최대값 = 참여한 모든 사람 수
+  const maxRank = ARCHIVE_PLAYER_SUMMARY.length || 4;
+
+  if (archiveStatsChart) {
+    archiveStatsChart.destroy();
+  }
+
+  archiveStatsChart = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: "누적 pt",
+          data: ptData,
+          borderColor: "rgb(54, 162, 235)",
+          backgroundColor: "rgba(54, 162, 235, 0.1)",
+          yAxisID: "y",
+          tension: 0.1,
+          pointRadius: 0
+        },
+        {
+          label: "등수",
+          data: rankData,
+          borderColor: "rgb(255, 99, 132)",
+          backgroundColor: "rgba(255, 99, 132, 0.1)",
+          yAxisID: "y1",
+          tension: 0.1,
+          pointRadius: 0
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: "index", intersect: false },
+      plugins: { legend: { position: "top" } },
+      scales: {
+        y: {
+          type: "linear",
+          display: true,
+          position: "left",
+          title: { display: true, text: "누적 pt" }
+        },
+        y1: {
+          type: "linear",
+          display: true,
+          position: "right",
+          reverse: true,
+          min: 1,
+          max: maxRank,
+          ticks: { stepSize: 1, precision: 0 },
+          title: { display: true, text: "등수" },
+          grid: { drawOnChartArea: false }
+        }
+      }
+    }
+  });
 }
 
 function setupArchiveRankingSort() {
@@ -857,11 +1040,12 @@ async function reloadArchiveList() {
 
 async function loadArchiveGames(id) {
   if (!id) {
-    renderGameList("archive-games-tbody", []);
+    renderGameList("archive-games-tbody", [], { useIndexNumbering: true });
     renderRankingTable("archive-ranking-tbody", [], ARCHIVE_RANKING_SORT, "archive-ranking-table", "아카이브를 선택하세요.");
     CURRENT_ARCHIVE_GAMES = [];
     ARCHIVE_PLAYER_SUMMARY = [];
-    updateArchivePlayerSelect();
+    ARCHIVE_VIEW_MODE = "ranking"; // 초기화
+    renderArchiveView();
     return;
   }
 
@@ -870,8 +1054,8 @@ async function loadArchiveGames(id) {
     games = (games || []).slice().sort((a, b) => (b.id || 0) - (a.id || 0));
     CURRENT_ARCHIVE_GAMES = games;
 
-    // 1. Render Games
-    renderGameList("archive-games-tbody", games);
+    // 1. Render Games (with index-based numbering)
+    renderGameList("archive-games-tbody", games, { useIndexNumbering: true });
 
     // 2. Calc Stats
     ARCHIVE_PLAYER_SUMMARY = calculateStatsFromGames(games);
@@ -879,8 +1063,8 @@ async function loadArchiveGames(id) {
     // 3. Render Ranking
     renderRankingTable("archive-ranking-tbody", ARCHIVE_PLAYER_SUMMARY, ARCHIVE_RANKING_SORT, "archive-ranking-table", "데이터 없음");
 
-    // 4. Update Select
-    updateArchivePlayerSelect();
+    // 4. Render View (ranking or stats)
+    renderArchiveView();
 
   } catch (e) {
     console.error(e);
@@ -889,70 +1073,111 @@ async function loadArchiveGames(id) {
 }
 
 function renderArchiveStatsForPlayer(name) {
-  // Reuse renderStats logic, just point to archive divs and use CURRENT_ARCHIVE_GAMES
   const summaryDiv = document.getElementById("archive-stats-summary");
-  const distDiv = document.getElementById("archive-stats-rank-dist");
-  const recentDiv = document.getElementById("archive-stats-recent-ranks");
-  const coTbody = document.getElementById("archive-stats-co-tbody");
+  const rankSection = document.getElementById("archive-stats-rank-section");
+  const gamesSection = document.getElementById("archive-stats-games-section");
+  const dailySection = document.getElementById("archive-stats-daily-section");
+  const coSection = document.getElementById("archive-stats-co-section");
 
-  // We can't reuse `renderStatsForPlayer` directly because IDs differ. 
-  // And `computePlayerDetailStats` is generic enough.
-  // I'll manually implement this one quickly using `computePlayerDetailStats`.
+  const distDiv = document.getElementById("archive-stats-rank-dist");
+  const coTbody = document.getElementById("archive-stats-co-tbody");
+  const playerGamesTbody = document.getElementById("archive-stats-player-games-tbody");
+  const chartHint = document.getElementById("archive-chart-hint");
+
+  if (!summaryDiv) return;
 
   if (!name) {
-    if (summaryDiv) summaryDiv.innerHTML = '<p class="hint-text">선택하세요</p>';
+    summaryDiv.innerHTML = '<p class="hint-text">플레이어를 선택하세요.</p>';
+    if (rankSection) rankSection.style.display = "none";
+    if (gamesSection) gamesSection.style.display = "none";
+    if (dailySection) dailySection.style.display = "none";
+    if (coSection) coSection.style.display = "none";
+
     if (distDiv) distDiv.innerHTML = "";
-    if (recentDiv) recentDiv.innerHTML = "";
     if (coTbody) coTbody.innerHTML = '<tr><td colspan="4" class="ranking-placeholder">데이터 없음</td></tr>';
+    if (playerGamesTbody) playerGamesTbody.innerHTML = '<tr><td colspan="5" class="ranking-placeholder">데이터 없음</td></tr>';
+
+    // 차트 초기화 및 힌트 표시
+    if (archiveStatsChart) {
+      archiveStatsChart.destroy();
+      archiveStatsChart = null;
+    }
+    if (chartHint) chartHint.style.display = "block";
+
     return;
   }
 
+  // Show sections
+  if (rankSection) rankSection.style.display = "block";
+  if (gamesSection) gamesSection.style.display = "block";
+  if (dailySection) dailySection.style.display = "block";
+  if (coSection) coSection.style.display = "block";
+
+  // Hide chart hint
+  if (chartHint) chartHint.style.display = "none";
+
+  // Render graph (전체 데이터)
+  renderArchiveHistoryGraph(name);
+
   const detail = computePlayerDetailStats(name, CURRENT_ARCHIVE_GAMES);
 
-  if (summaryDiv) {
-    summaryDiv.innerHTML = `
-            <div class="stats-summary-main">
-              <div><span class="stats-label">플레이어</span> <span class="stats-value">${name}</span></div>
-              <div><span class="stats-label">게임 수</span> <span class="stats-value">${detail.games}</span></div>
-              <div><span class="stats-label">총 pt</span> <span class="stats-value">${detail.total_pt.toFixed(1)}</span></div>
-              <div><span class="stats-label">연대율</span> <span class="stats-value">${detail.yonde_rate.toFixed(1)}%</span></div>
-              <div><span class="stats-label">토비율</span> <span class="stats-value">${detail.tobi_rate.toFixed(1)}% (${detail.tobi_count}회)</span></div>
-              <div><span class="stats-label">최다 점수</span> <span class="stats-value">${detail.max_score}</span></div>
-            </div>`;
-  }
+  // Summary
+  summaryDiv.innerHTML = `
+    <div class="stats-summary-main">
+      <div><span class="stats-label">플레이어</span> <span class="stats-value">${name}</span></div>
+      <div><span class="stats-label">게임 수</span> <span class="stats-value">${detail.games}</span></div>
+      <div><span class="stats-label">총 pt</span> <span class="stats-value">${detail.total_pt.toFixed(1)}</span></div>
+      <div><span class="stats-label">연대율</span> <span class="stats-value">${detail.yonde_rate.toFixed(1)}%</span></div>
+      <div><span class="stats-label">토비율</span> <span class="stats-value">${detail.tobi_rate.toFixed(1)}% (${detail.tobi_count}회)</span></div>
+      <div><span class="stats-label">최다 점수</span> <span class="stats-value">${detail.max_score}</span></div>
+    </div>
+  `;
 
+  // Distribution
   if (distDiv) {
     distDiv.innerHTML = "";
     distDiv.appendChild(createRankDistBar(detail.rankCounts, detail.games));
   }
 
-  if (recentDiv) {
-    recentDiv.innerHTML = "";
-    const recent = detail.recent.slice(-30);
-    const wrapper = document.createElement("div");
-    wrapper.className = "recent-rank-graph";
-    if (!recent.length) recentDiv.innerHTML = '<p class="ranking-placeholder">기록 없음</p>';
-    else {
-      recent.forEach(r => {
-        const item = document.createElement("div");
-        item.className = `recent-rank-item rank-${r.rank}`;
-        item.textContent = r.rank;
-        item.title = `${formatKoreanTime(r.created_at)} - ${r.rank}등`;
-        wrapper.appendChild(item);
-      });
-      recentDiv.appendChild(wrapper);
-    }
-  }
-
+  // Co-Players
   if (coTbody) {
     coTbody.innerHTML = "";
-    if (!detail.coPlayers.length) coTbody.innerHTML = '<tr><td colspan="4" class="ranking-placeholder">기록 없음</td></tr>';
-    else {
+    if (detail.coPlayers.length) {
       detail.coPlayers.forEach(c => {
         const tr = document.createElement("tr");
         tr.innerHTML = `<td>${c.name}</td><td>${c.games}</td><td>${c.my_avg_rank.toFixed(2)}</td><td>${c.co_avg_rank.toFixed(2)}</td>`;
         coTbody.appendChild(tr);
       });
+    } else {
+      coTbody.innerHTML = '<tr><td colspan="4" class="ranking-placeholder">함께 친 기사가 없음</td></tr>';
+    }
+  }
+
+  // Game Records
+  if (playerGamesTbody) {
+    playerGamesTbody.innerHTML = "";
+    if (detail.gameRecords.length) {
+      detail.gameRecords.forEach(rec => {
+        const tr = document.createElement("tr");
+        const tdTime = document.createElement("td");
+        tdTime.textContent = formatKoreanTime(rec.created_at);
+        tr.appendChild(tdTime);
+        rec.names.forEach((n, i) => {
+          const td = document.createElement("td");
+          td.innerHTML = `<strong>${n}</strong><br>${rec.scores[i]} (${rec.pts[i].toFixed(1)})`;
+          const isWinner = rec.ranks[i] === 1;
+          const isMyPlayer = i === rec.myIndex;
+          if (isWinner) {
+            td.classList.add("winner-cell");
+          } else if (isMyPlayer) {
+            td.classList.add("my-player-cell");
+          }
+          tr.appendChild(td);
+        });
+        playerGamesTbody.appendChild(tr);
+      });
+    } else {
+      playerGamesTbody.innerHTML = '<tr><td colspan="5" class="ranking-placeholder">기록 없음</td></tr>';
     }
   }
 }
