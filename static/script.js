@@ -478,12 +478,13 @@ async function loadGamesAndRanking() {
 
   // 1. 대국 기록 렌더링
   renderGameList("games-tbody", games, {
-    onDelete: async (id) => {
-      if (!confirm("이 판을 삭제할까요?")) return;
-      try {
-        await fetchJSON(`/api/games/${id}`, { method: "DELETE" });
-        await loadGamesAndRanking();
-      } catch (e) { console.error(e); alert("삭제 실패"); }
+    onDelete: (id) => {
+      showConfirm("이 판을 삭제할까요?", async () => {
+        try {
+          await fetchJSON(`/api/games/${id}`, { method: "DELETE" });
+          await loadGamesAndRanking();
+        } catch (e) { console.error(e); alert("삭제 실패"); }
+      });
     }
   });
 
@@ -1024,10 +1025,11 @@ async function reloadArchiveList() {
         tr.innerHTML = `<td>${a.name}</td><td>${formatKoreanTime(a.created_at)}</td><td>${a.game_count || 0}</td><td></td>`;
         const btn = document.createElement("button");
         btn.textContent = "삭제";
-        btn.onclick = async () => {
-          if (!confirm("삭제합니까?")) return;
-          try { await fetchJSON(`/api/archives/${a.id}`, { method: "DELETE" }); reloadArchiveList(); }
-          catch (e) { alert("실패"); }
+        btn.onclick = () => {
+          showConfirm("삭제합니까?", async () => {
+            try { await fetchJSON(`/api/archives/${a.id}`, { method: "DELETE" }); reloadArchiveList(); }
+            catch (e) { alert("실패"); }
+          });
         };
         tr.children[3].appendChild(btn);
         tbody.appendChild(tr);
@@ -1238,11 +1240,11 @@ async function loadTournamentGamesAndRanking() {
   TOURNAMENT_GAMES = games;
 
   renderGameList("tournament-games-tbody", games, {
-    onDelete: async (id) => {
-      if (confirm("삭제?")) {
+    onDelete: (id) => {
+      showConfirm("삭제?", async () => {
         await fetchJSON(`/api/tournament_games/${id}`, { method: "DELETE" });
         loadTournamentGamesAndRanking();
-      }
+      });
     }
   });
 
@@ -1434,21 +1436,21 @@ function setupAdminView() {
   // 초기화
   const rsb = document.getElementById("reset-games-btn");
   if (rsb) {
-    rsb.addEventListener("click", async () => {
-      if (confirm("정말 개인전 기록을 초기화하시겠습니까?")) {
+    rsb.addEventListener("click", () => {
+      showConfirm("정말 개인전 기록을 초기화하시겠습니까?", async () => {
         await fetchJSON("/api/admin/reset_games", { method: "POST" });
         loadGamesAndRanking();
-      }
+      });
     });
   }
 
   const rstb = document.getElementById("reset-tournament-btn");
   if (rstb) {
-    rstb.addEventListener("click", async () => {
-      if (confirm("정말 대회 기록을 초기화하시겠습니까?")) {
+    rstb.addEventListener("click", () => {
+      showConfirm("정말 대회 기록을 초기화하시겠습니까?", async () => {
         await fetchJSON("/api/admin/reset_tournament", { method: "POST" });
         loadTournamentGamesAndRanking();
-      }
+      });
     });
   }
 }
@@ -1467,8 +1469,8 @@ async function reloadBadgeList() {
       tr.innerHTML = `<td>${b.code}</td><td>${b.name}</td><td>${b.grade}</td><td>${b.description || ""}</td><td></td>`;
       const btn = document.createElement("button");
       btn.textContent = "삭제";
-      btn.onclick = async () => {
-        if (confirm("삭제??")) { await fetchJSON(`/api/badges/${b.id}`, { method: "DELETE" }); reloadBadgeList(); }
+      btn.onclick = () => {
+        showConfirm("삭제??", async () => { await fetchJSON(`/api/badges/${b.id}`, { method: "DELETE" }); reloadBadgeList(); });
       };
       tr.children[4].appendChild(btn);
       tbody.appendChild(tr);
@@ -1521,14 +1523,14 @@ async function loadAdminPlayerBadges(name) {
       const btn = document.createElement("button");
       btn.textContent = "삭제";
       btn.onclick = async () => {
-        if (confirm("이 뱃지를 제거할까요?")) {
+        showConfirm("이 뱃지를 제거할까요?", async () => {
           await fetchJSON(`/api/player_badges/${pb.id}`, { method: "DELETE" });
           loadAdminPlayerBadges(name);
           rebuildStatsPlayerList();
           // If stats view is selected, update it
           const s = document.getElementById("stats-player-select");
           if (s && s.value === name) loadPlayerBadgesForStats(name);
-        }
+        });
       };
 
       topRow.appendChild(main);

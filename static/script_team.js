@@ -16,10 +16,13 @@ function setupTeamManagement() {
         content.style.display = "none";
         icon.textContent = "▼";
 
-        header.addEventListener("click", () => {
-            const isHidden = content.style.display === "none";
-            content.style.display = isHidden ? "block" : "none";
-            icon.textContent = isHidden ? "▲" : "▼";
+        header.addEventListener("click", (e) => {
+            // 헤더의 h2 또는 토글 아이콘만 클릭했을 때 토글 (버튼 등 다른 요소 제외)
+            if (e.target === header || e.target.tagName === "H2" || e.target === icon) {
+                const isHidden = content.style.display === "none";
+                content.style.display = isHidden ? "block" : "none";
+                icon.textContent = isHidden ? "▲" : "▼";
+            }
         });
     }
 }
@@ -211,14 +214,15 @@ async function createTeam(e) {
     }
 }
 
-async function deleteTeam(teamId) {
-    if (!confirm("정말 이 팀을 삭제하시겠습니까? (멤버 정보도 함께 삭제됩니다)")) return;
-    try {
-        await fetchJSON(`/api/teams/${teamId}`, { method: "DELETE" });
-        loadTeams();
-    } catch (err) {
-        alert("팀 삭제 실패: " + err.message);
-    }
+function deleteTeam(teamId) {
+    showConfirm("정말 이 팀을 삭제하시겠습니까? (멤버 정보도 함께 삭제됩니다)", async () => {
+        try {
+            await fetchJSON(`/api/teams/${teamId}`, { method: "DELETE" });
+            loadTeams();
+        } catch (err) {
+            alert("팀 삭제 실패: " + err.message);
+        }
+    });
 }
 
 async function updateTeamColor(teamId, newColor) {
@@ -270,14 +274,15 @@ async function addTeamMember(teamId) {
     }
 }
 
-async function deleteTeamMember(memberId) {
-    if (!confirm("이 멤버를 팀에서 제외하시겠습니까?")) return;
-    try {
-        await fetchJSON(`/api/team_members/${memberId}`, { method: "DELETE" });
-        loadTeams();
-    } catch (err) {
-        alert("멤버 삭제 실패: " + err.message);
-    }
+function deleteTeamMember(memberId) {
+    showConfirm("이 멤버를 팀에서 제외하시겠습니까?", async () => {
+        try {
+            await fetchJSON(`/api/team_members/${memberId}`, { method: "DELETE" });
+            loadTeams();
+        } catch (err) {
+            alert("멤버 삭제 실패: " + err.message);
+        }
+    });
 }
 
 // ======================= 팀 대국 기록 입력 로직 =======================
@@ -473,14 +478,15 @@ async function loadTeamGames() {
     }
 }
 
-async function deleteTeamGame(id) {
-    if (!confirm("이 대국 기록을 삭제하시겠습니까?")) return;
-    try {
-        await fetchJSON(`/api/team_games/${id}`, { method: "DELETE" });
-        loadTeamGames();
-    } catch (e) {
-        alert("삭제 실패: " + e.message);
-    }
+function deleteTeamGame(id) {
+    showConfirm("이 대국 기록을 삭제하시겠습니까?", async () => {
+        try {
+            await fetchJSON(`/api/team_games/${id}`, { method: "DELETE" });
+            loadTeamGames();
+        } catch (e) {
+            alert("삭제 실패: " + e.message);
+        }
+    });
 }
 
 
