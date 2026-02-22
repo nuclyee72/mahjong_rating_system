@@ -1458,19 +1458,36 @@ def delete_team(team_id):
 def update_team(team_id):
     data = request.get_json() or {}
     color = data.get("color")
-    
-    if color is None:
-        return jsonify({"error": "color is required"}), 400
-        
+    name = data.get("name")
+
+    if color is None and name is None:
+        return jsonify({"error": "color or name is required"}), 400
+
     conn = get_db()
-    cur = conn.execute("UPDATE teams SET color = ? WHERE id = ?", (str(color).strip(), team_id))
-    conn.commit()
-    updated = cur.rowcount
-    conn.close()
-    
-    if updated == 0:
+
+    # 팀 존재 여부 확인
+    cur = conn.execute("SELECT id FROM teams WHERE id = ?", (team_id,))
+    if not cur.fetchone():
+        conn.close()
         return jsonify({"error": "team not found"}), 404
-        
+
+    if name is not None:
+        new_name = str(name).strip()
+        if not new_name:
+            conn.close()
+            return jsonify({"error": "team name cannot be empty"}), 400
+        try:
+            conn.execute("UPDATE teams SET name = ? WHERE id = ?", (new_name, team_id))
+        except sqlite3.IntegrityError:
+            conn.close()
+            return jsonify({"error": "team name already exists"}), 400
+
+    if color is not None:
+        conn.execute("UPDATE teams SET color = ? WHERE id = ?", (str(color).strip(), team_id))
+
+    conn.commit()
+    conn.close()
+
     return jsonify({"ok": True})
 
 

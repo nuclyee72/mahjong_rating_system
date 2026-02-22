@@ -139,10 +139,26 @@ async function loadTeams() {
             nameTitle.textContent = t.name;
             nameTitle.style.margin = "0";
 
+            // 이름 변경 버튼
+            const renameBtn = document.createElement("button");
+            renameBtn.className = "edit-btn";
+            renameBtn.style.display = "inline-flex";
+            renameBtn.style.alignItems = "center";
+            renameBtn.style.justifyContent = "center";
+            renameBtn.style.background = "#eeeeee";
+            renameBtn.style.border = "1px solid #ccc";
+            renameBtn.style.borderRadius = "4px";
+            renameBtn.style.padding = "2px 6px";
+            renameBtn.style.fontSize = "0.8em";
+            renameBtn.style.cursor = "pointer";
+            renameBtn.textContent = "이름 변경";
+            renameBtn.onclick = () => startRenameTeam(t.id, nameTitle, renameBtn);
+
             nameArea.appendChild(logoImg);
             nameArea.appendChild(uploadWrap);
             nameArea.appendChild(colorInput);
             nameArea.appendChild(nameTitle);
+            nameArea.appendChild(renameBtn);
 
             header.appendChild(nameArea);
 
@@ -235,6 +251,104 @@ async function updateTeamColor(teamId, newColor) {
     } catch (err) {
         alert("색상 변경 실패: " + err.message);
         loadTeams(); // Revert to previous state
+    }
+}
+
+function startRenameTeam(teamId, nameTitleEl, renameBtnEl) {
+    // 이미 편집 중이면 무시
+    if (renameBtnEl.dataset.editing === "true") return;
+    renameBtnEl.dataset.editing = "true";
+    renameBtnEl.style.display = "none";
+
+    const currentName = nameTitleEl.textContent;
+    nameTitleEl.style.display = "none";
+
+    // 인라인 편집 컨테이너
+    const editWrap = document.createElement("span");
+    editWrap.style.display = "inline-flex";
+    editWrap.style.alignItems = "center";
+    editWrap.style.gap = "4px";
+
+    const input = document.createElement("input");
+    input.type = "text";
+    input.value = currentName;
+    input.style.fontSize = "1em";
+    input.style.fontWeight = "bold";
+    input.style.padding = "2px 6px";
+    input.style.border = "1px solid #4f7dff";
+    input.style.borderRadius = "4px";
+    input.style.width = "120px";
+
+    const confirmBtn = document.createElement("button");
+    confirmBtn.textContent = "✓";
+    confirmBtn.title = "확인";
+    confirmBtn.style.padding = "2px 6px";
+    confirmBtn.style.borderRadius = "4px";
+    confirmBtn.style.border = "none";
+    confirmBtn.style.background = "#4f7dff";
+    confirmBtn.style.color = "#fff";
+    confirmBtn.style.cursor = "pointer";
+    confirmBtn.style.fontSize = "0.85em";
+
+    const cancelBtn = document.createElement("button");
+    cancelBtn.textContent = "✕";
+    cancelBtn.title = "취소";
+    cancelBtn.style.padding = "2px 6px";
+    cancelBtn.style.borderRadius = "4px";
+    cancelBtn.style.border = "1px solid #ccc";
+    cancelBtn.style.background = "#f5f5f5";
+    cancelBtn.style.cursor = "pointer";
+    cancelBtn.style.fontSize = "0.85em";
+
+    const cancel = () => {
+        editWrap.remove();
+        nameTitleEl.style.display = "";
+        renameBtnEl.style.display = "";
+        delete renameBtnEl.dataset.editing;
+    };
+
+    const confirm = async () => {
+        const newName = input.value.trim();
+        if (!newName) return alert("팀 이름을 입력하세요.");
+        if (newName === currentName) { cancel(); return; }
+        try {
+            await fetchJSON(`/api/teams/${teamId}`, {
+                method: "PUT",
+                body: JSON.stringify({ name: newName })
+            });
+            loadTeams();
+        } catch (err) {
+            alert("이름 변경 실패: " + err.message);
+            cancel();
+        }
+    };
+
+    confirmBtn.onclick = confirm;
+    cancelBtn.onclick = cancel;
+    input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") confirm();
+        if (e.key === "Escape") cancel();
+    });
+
+    editWrap.appendChild(input);
+    editWrap.appendChild(confirmBtn);
+    editWrap.appendChild(cancelBtn);
+
+    // nameTitle 바로 뒤에 삽입
+    nameTitleEl.parentNode.insertBefore(editWrap, nameTitleEl.nextSibling);
+    input.focus();
+    input.select();
+}
+
+async function updateTeamName(teamId, newName) {
+    try {
+        await fetchJSON(`/api/teams/${teamId}`, {
+            method: "PUT",
+            body: JSON.stringify({ name: newName })
+        });
+        loadTeams();
+    } catch (err) {
+        alert("이름 변경 실패: " + err.message);
     }
 }
 
@@ -437,7 +551,7 @@ async function loadTeamGames() {
                 { t: g.player4_team_name, n: g.player4_name, s: sData[3], p: pts[3] },
             ];
 
-            const maxScore = Math.max(...sData);
+            const maxPt = Math.max(...pts);
 
             let playerCells = "";
             for (let i = 0; i < 4; i++) {
@@ -445,7 +559,7 @@ async function loadTeamGames() {
                 // Remove + for positive, keep - for negative
                 const ptStr = `${p.p}`;
 
-                const isWinner = (p.s === maxScore);
+                const isWinner = (p.p === maxPt);
                 const cellClass = isWinner ? 'class="winner-cell"' : '';
 
                 const color = getTeamColor(p.t);

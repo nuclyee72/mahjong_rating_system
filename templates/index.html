@@ -596,7 +596,16 @@
           <div class="games-header">
             <h2>팀 대국 기록</h2>
           </div>
-          <table class="games-table">
+          <table class="games-table" style="table-layout:fixed; width:100%;">
+            <colgroup>
+              <col style="width:40px"> <!-- ID -->
+              <col style="width:90px"> <!-- 시간 -->
+              <col> <!-- P1 -->
+              <col> <!-- P2 -->
+              <col> <!-- P3 -->
+              <col> <!-- P4 -->
+              <col style="width:50px"> <!-- 삭제 -->
+            </colgroup>
             <thead>
               <tr>
                 <th>ID</th>
