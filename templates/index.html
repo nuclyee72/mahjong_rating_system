@@ -284,6 +284,20 @@
             <canvas id="stats-daily-chart"></canvas>
           </div>
           <p class="hint-text" id="chart-hint">플레이어를 선택하면 그래프가 표시됩니다.</p>
+
+          <div
+            style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; margin-top: 24px;">
+            <h3 style="margin: 0;">게임 ID별 포인트 추이</h3>
+            <div class="chart-filters">
+              <button class="gameid-filter-btn active" data-limit="10">최근 10판</button>
+              <button class="gameid-filter-btn" data-limit="20">최근 20판</button>
+              <button class="gameid-filter-btn" data-limit="50">최근 50판</button>
+              <button class="gameid-filter-btn" data-limit="0">전체</button>
+            </div>
+          </div>
+          <div class="chart-container" style="position: relative; height: 260px; width: 100%;">
+            <canvas id="stats-gameid-pt-chart"></canvas>
+          </div>
         </section>
 
         <section id="stats-co-section" class="stats-panel" style="display:none;">

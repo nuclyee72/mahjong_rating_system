@@ -650,6 +650,10 @@ function renderStatsForPlayer(name) {
       statsChart.destroy();
       statsChart = null;
     }
+    if (typeof statsGameIdPtChart !== 'undefined' && statsGameIdPtChart) {
+      statsGameIdPtChart.destroy();
+      statsGameIdPtChart = null;
+    }
     if (chartHint) chartHint.style.display = "block";
 
     loadPlayerBadgesForStats("");
@@ -666,6 +670,11 @@ function renderStatsForPlayer(name) {
 
   renderHistoryGraph(name, "week"); // Render graph (default: 1 week)
   renderRecentRankTrend(name, 10); // Render recent rank trend (default: 10 games)
+  // 게임 ID별 포인트 차트 - 버튼 초기화 후 기본 10판으로 렌더
+  document.querySelectorAll('.gameid-filter-btn').forEach(b => b.classList.remove('active'));
+  const defaultBtn = document.querySelector('.gameid-filter-btn[data-limit="10"]');
+  if (defaultBtn) defaultBtn.classList.add('active');
+  renderGameIdPtChart(name, 10); // 게임 ID별 포인트 차트
 
   const detail = computePlayerDetailStats(name, ALL_GAMES);
 
@@ -1830,6 +1839,119 @@ function renderHistoryGraph(targetName, range) {
   });
 }
 
+// ======================= 게임 ID별 포인트 차트 =======================
+
+let statsGameIdPtChart = null;
+
+function renderGameIdPtChart(targetName, limit = 10) {
+  const canvas = document.getElementById("stats-gameid-pt-chart");
+  if (!canvas) return;
+
+  if (statsGameIdPtChart) {
+    statsGameIdPtChart.destroy();
+    statsGameIdPtChart = null;
+  }
+
+  if (!targetName || !ALL_GAMES || ALL_GAMES.length === 0) return;
+
+  // 해당 플레이어가 참가한 게임만 시간순(ID 오름차순)으로 추출
+  const myGames = ALL_GAMES
+    .filter(g => {
+      const names = [g.player1_name, g.player2_name, g.player3_name, g.player4_name]
+        .map(n => (n || "").trim());
+      return names.includes(targetName);
+    })
+    .slice() // ALL_GAMES는 내림차순이므로 복사 후 역순
+    .reverse();
+
+  if (myGames.length === 0) return;
+
+  // limit=0이면 전체, 아니면 최근 N판
+  const sliced = (limit > 0) ? myGames.slice(-limit) : myGames;
+
+  const labels = [];     // 게임 ID
+  const ptData = [];     // 각 게임 pt
+  const cumPtData = [];  // 누적 pt
+  let cumPt = 0;
+
+  // 누적 pt는 전체 기준으로 먼저 계산 후, sliced 범위만 표시
+  let allCum = 0;
+  const cumByGame = new Map();
+  myGames.forEach(g => {
+    const scores = [
+      Number(g.player1_score), Number(g.player2_score),
+      Number(g.player3_score), Number(g.player4_score)
+    ];
+    const names = [g.player1_name, g.player2_name, g.player3_name, g.player4_name]
+      .map(n => (n || "").trim());
+    const idx = names.indexOf(targetName);
+    if (idx === -1) return;
+    const pts = calcPts(scores);
+    allCum = +(allCum + pts[idx]).toFixed(1);
+    cumByGame.set(g.id, allCum);
+  });
+
+  sliced.forEach(g => {
+    const scores = [
+      Number(g.player1_score), Number(g.player2_score),
+      Number(g.player3_score), Number(g.player4_score)
+    ];
+    const names = [g.player1_name, g.player2_name, g.player3_name, g.player4_name]
+      .map(n => (n || "").trim());
+    const idx = names.indexOf(targetName);
+    if (idx === -1) return;
+
+    labels.push(g.id);
+    cumPtData.push(cumByGame.get(g.id) ?? 0);
+  });
+
+  statsGameIdPtChart = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: '누적 pt',
+          data: cumPtData,
+          borderColor: '#f5a623',
+          backgroundColor: 'rgba(245,166,35,0.12)',
+          pointRadius: 3,
+          pointBackgroundColor: '#f5a623',
+          borderWidth: 2,
+          tension: 0.1,
+          fill: false
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      animation: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: (items) => `게임 #${items[0].label}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          title: { display: true, text: '게임 ID', font: { size: 11 } },
+          ticks: { font: { size: 10 } }
+        },
+        y: {
+          title: { display: true, text: '누적 pt', font: { size: 11 } },
+          ticks: { font: { size: 10 } },
+          grid: { color: 'rgba(0,0,0,0.06)' }
+        }
+      }
+    }
+
+  });
+}
+
+
 function setupChartFilters() {
   document.querySelectorAll('.chart-filter-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
@@ -1837,6 +1959,18 @@ function setupChartFilters() {
       const select = document.getElementById("stats-player-select");
       if (select && select.value) {
         renderHistoryGraph(select.value, range);
+      }
+    });
+  });
+
+  document.querySelectorAll('.gameid-filter-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const limit = Number(e.target.dataset.limit);
+      const select = document.getElementById("stats-player-select");
+      document.querySelectorAll('.gameid-filter-btn').forEach(b => b.classList.remove('active'));
+      e.target.classList.add('active');
+      if (select && select.value) {
+        renderGameIdPtChart(select.value, limit);
       }
     });
   });

@@ -885,7 +885,8 @@ td.winner {
 }
 
 .chart-filter-btn,
-.rank-filter-btn {
+.rank-filter-btn,
+.gameid-filter-btn {
   font-size: 11px;
   padding: 4px 8px;
   border-radius: 12px;
@@ -897,12 +898,14 @@ td.winner {
 }
 
 .chart-filter-btn:hover,
-.rank-filter-btn:hover {
+.rank-filter-btn:hover,
+.gameid-filter-btn:hover {
   background-color: #f0f0f0;
 }
 
 .chart-filter-btn.active,
-.rank-filter-btn.active {
+.rank-filter-btn.active,
+.gameid-filter-btn.active {
   background-color: #4f9cff;
   color: #fff;
   border-color: #4f9cff;
