@@ -1089,11 +1089,6 @@ td.winner {
 }
 
 
-/* 테이블 행 등장 */
-.anim-row {
-  animation: rowFadeIn 0.22s ease both;
-}
-
 /* winner-cell glow pulse */
 .winner-cell,
 td.winner {
@@ -1259,4 +1254,21 @@ textarea {
     background: #4f7dff;
     transform: scale(1.35);
   }
+}
+
+/* ==================== 행 로딩 애니메이션 ==================== */
+@keyframes rowFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.anim-row {
+  animation: rowFadeIn 0.22s ease both;
 }

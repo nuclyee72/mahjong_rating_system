@@ -533,9 +533,10 @@ async function loadTeamGames() {
             return;
         }
 
-        games.forEach(g => {
+        games.forEach((g, gi) => {
             const tr = document.createElement("tr");
             tr.className = "anim-row";
+            tr.style.animationDelay = `${gi * 30}ms`;
 
             const sData = [
                 Number(g.player1_score),
@@ -737,6 +738,7 @@ async function loadTeamRanking() {
                     const teamColor = team ? (team.color || '#cccccc') : '#cccccc';
                     const tr = document.createElement("tr");
                     tr.className = "anim-row";
+                    tr.style.animationDelay = `${index * 30}ms`;
                     tr.innerHTML = `
           <td>${index + 1}</td>
           <td style="padding:0px; padding-right:0px; text-align:left; position:relative;">
@@ -827,6 +829,7 @@ async function loadTeamPersonalRanking() {
                 const teamColor = team ? (team.color || '#cccccc') : '#cccccc';
                 const tr = document.createElement("tr");
                 tr.className = "anim-row";
+                tr.style.animationDelay = `${index * 30}ms`;
                 tr.innerHTML = `
           <td>${index + 1}</td>
           <td style="padding:0px; padding-right:0px; text-align:left; position:relative;">
