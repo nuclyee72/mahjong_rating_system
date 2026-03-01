@@ -1196,12 +1196,36 @@ textarea {
     display: block;
   }
 
-  /* 사이트 제목 왼쪽/오른쪽 여백 */
+  /* 상단 바 화면 밖으로 나가지 않게 */
+  .top-bar {
+    padding: 0 16px;
+    display: block;
+    /* 모바일에선 제목과 버튼을 위아래로 분리하는 게 안전 */
+  }
+
+  /* 사이트 제목 왼쪽 여백 및 크기 축소 */
   h1 {
     text-align: left;
-    padding-left: 14px;
-    padding-right: 14px;
-    font-size: 22px;
+    font-size: 20px;
+    margin-bottom: 12px;
+  }
+
+  /* 뷰 전환 탭 스크롤 가능하게 */
+  .view-switch {
+    overflow-x: auto;
+    white-space: nowrap;
+    padding-bottom: 6px;
+    /* 스크롤바 숨기기 */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .view-switch::-webkit-scrollbar {
+    display: none;
+  }
+
+  .view-switch-btn {
+    flex-shrink: 0;
   }
 
   .mobile-br {
