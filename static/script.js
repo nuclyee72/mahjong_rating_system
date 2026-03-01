@@ -351,15 +351,41 @@ function setupViewSwitch() {
   };
   const buttons = document.querySelectorAll(".view-switch-btn");
 
+  // 탭 순서 (버튼 순서와 동일)
+  const viewOrder = ["personal", "stats", "tournament", "archive", "team", "admin"];
+  let currentView = "personal";
+
   buttons.forEach((btn) => {
     btn.addEventListener("click", () => {
       const target = btn.dataset.view;
+      if (target === currentView) return;
+
+      // 방향 결정
+      const fromIdx = viewOrder.indexOf(currentView);
+      const toIdx = viewOrder.indexOf(target);
+      const slideClass = toIdx > fromIdx ? "view-slide-right" : "view-slide-left";
+
       buttons.forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
 
-      Object.entries(views).forEach(([k, el]) => {
-        if (el) el.style.display = (k === target) ? "block" : "none";
-      });
+      // 현재 뷰 숨기기
+      if (views[currentView]) views[currentView].style.display = "none";
+
+      // 새 뷰 표시 + 슬라이드 클래스 적용
+      const nextEl = views[target];
+      if (nextEl) {
+        nextEl.style.display = "block";
+        nextEl.classList.remove("view-slide-right", "view-slide-left");
+        // 강제 reflow 후 클래스 추가 (애니메이션 재시작)
+        void nextEl.offsetWidth;
+        nextEl.classList.add(slideClass);
+        // 애니메이션 끝나면 클래스 제거
+        nextEl.addEventListener("animationend", () => {
+          nextEl.classList.remove("view-slide-right", "view-slide-left");
+        }, { once: true });
+      }
+
+      currentView = target;
 
       if (target === "stats") updateStatsPlayerSelect();
       if (target === "archive") reloadArchiveList();

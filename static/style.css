@@ -179,10 +179,7 @@ section {
 
 .form-panel .row input {
   font-size: 12px;
-  padding: 3px 6px;
-  height: 24px;
-  line-height: 24px;
-  padding: 0 8px;
+  padding: 6px 8px;
   box-sizing: border-box;
 }
 
@@ -1004,9 +1001,8 @@ td.winner {
 .team-game-row select,
 .team-game-row input {
   flex: 1;
-  padding: 6px;
+  padding: 6px 8px;
   border: 1px solid #ccc;
-  border-radius: 4px;
 }
 
 /* ==================== 애니메이션 ==================== */
@@ -1048,9 +1044,43 @@ td.winner {
   }
 }
 
-/* 뷰 전환 fade-in */
+/* 뷰 전환: 공통 래퍼 설정 */
 .view {
-  animation: fadeSlideIn 0.25s ease both;
+  overflow: hidden;
+}
+
+/* 오른쪽에서 들어오기 (→ 방향 탭 클릭) */
+@keyframes slideInFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(60px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* 왼쪽에서 들어오기 (← 방향 탭 클릭) */
+@keyframes slideInFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-60px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.view-slide-right {
+  animation: slideInFromRight 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+.view-slide-left {
+  animation: slideInFromLeft 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
 }
 
 /* 패널 staggered 등장 */
@@ -1066,39 +1096,6 @@ td.winner {
 /* 테이블 행 등장 */
 .anim-row {
   animation: rowFadeIn 0.22s ease both;
-}
-
-/* 순차적 지연 (최대 8행) */
-.anim-row:nth-child(1) {
-  animation-delay: 0.03s;
-}
-
-.anim-row:nth-child(2) {
-  animation-delay: 0.06s;
-}
-
-.anim-row:nth-child(3) {
-  animation-delay: 0.09s;
-}
-
-.anim-row:nth-child(4) {
-  animation-delay: 0.12s;
-}
-
-.anim-row:nth-child(5) {
-  animation-delay: 0.15s;
-}
-
-.anim-row:nth-child(6) {
-  animation-delay: 0.18s;
-}
-
-.anim-row:nth-child(7) {
-  animation-delay: 0.21s;
-}
-
-.anim-row:nth-child(8) {
-  animation-delay: 0.24s;
 }
 
 /* winner-cell glow pulse */
@@ -1123,6 +1120,7 @@ td.winner {
 
 /* 공통 버튼 hover/active 효과 */
 button {
+  border-radius: 6px;
   transition: transform 0.15s, box-shadow 0.15s, background-color 0.15s;
 }
 
@@ -1149,4 +1147,22 @@ button:active {
 .team-card:hover {
   transform: translateY(-3px);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+}
+
+/* ==================== 입력 칸 공통 스타일 ==================== */
+input[type="text"],
+input[type="number"],
+input[type="password"],
+input[type="email"],
+input:not([type]),
+select {
+  border-radius: 6px;
+  padding: 6px 8px;
+  box-sizing: border-box;
+  border: 1px solid #ccc;
+}
+
+input[type="file"],
+textarea {
+  border-radius: 6px;
 }
