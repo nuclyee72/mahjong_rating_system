@@ -529,7 +529,7 @@ async function loadTeamGames() {
         tbody.innerHTML = "";
 
         if (!games || games.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="ranking-placeholder">기록이 없습니다.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="ranking-placeholder">기록이 없습니다.</td></tr>';
             return;
         }
 
@@ -588,7 +588,7 @@ async function loadTeamGames() {
     } catch (e) {
         console.error(e);
         const tbody = document.getElementById("team-games-tbody");
-        if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="ranking-placeholder">로드 실패</td></tr>';
+        if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="ranking-placeholder">로드 실패</td></tr>';
     }
 }
 
