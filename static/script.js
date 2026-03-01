@@ -332,6 +332,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupTeamGameForm(); // Team Game Input Setup
   setupChartFilters(); // Added chart filters setup
   setupRankTrendFilters(); // Added rank trend filters setup
+  setupMobileSwipe(); // 모바일 스와이프
 
   loadGamesAndRanking(); // 개인전 데이터 로드
   reloadBadgeList();
@@ -386,6 +387,9 @@ function setupViewSwitch() {
       }
 
       currentView = target;
+
+      // 모바일: 해당 뷰 스와이프 초기화
+      setTimeout(() => { if (typeof setupMobileSwipe === 'function') setupMobileSwipe(); }, 50);
 
       if (target === "stats") updateStatsPlayerSelect();
       if (target === "archive") reloadArchiveList();
@@ -2196,5 +2200,66 @@ function setupRankTrendFilters() {
         renderRecentRankTrend(select.value, limit);
       }
     });
+  });
+}
+
+// ======================= 모바일 Right Panel 스와이프 =======================
+
+function setupMobileSwipe() {
+  if (window.innerWidth > 700) return;
+
+  document.querySelectorAll('.view').forEach(view => {
+    const rightPanel = view.querySelector('.right-panel');
+    if (!rightPanel) return;
+
+    const sections = Array.from(rightPanel.children).filter(el => el.tagName === 'SECTION');
+    if (sections.length === 0) return;
+
+    if (rightPanel.classList.contains('swipe-enabled')) return;
+
+    const track = document.createElement('div');
+    track.className = 'swipe-track';
+    sections.forEach(sec => track.appendChild(sec));
+    rightPanel.appendChild(track);
+
+    const dotsWrap = document.createElement('div');
+    dotsWrap.className = 'swipe-dots';
+    sections.forEach((_, i) => {
+      const dot = document.createElement('div');
+      dot.className = 'swipe-dot' + (i === 0 ? ' active' : '');
+      dot.addEventListener('click', () => goToSlide(i));
+      dotsWrap.appendChild(dot);
+    });
+
+    rightPanel.classList.add('swipe-enabled');
+    rightPanel.appendChild(dotsWrap);
+
+    let currentIndex = 0;
+
+    function goToSlide(idx) {
+      currentIndex = Math.max(0, Math.min(idx, sections.length - 1));
+      track.style.transform = 'translateX(-' + (currentIndex * 100) + '%)';
+      dotsWrap.querySelectorAll('.swipe-dot').forEach((d, i) => {
+        d.classList.toggle('active', i === currentIndex);
+      });
+    }
+
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    rightPanel.addEventListener('touchstart', e => {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    }, { passive: true });
+
+    rightPanel.addEventListener('touchend', e => {
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      const dy = e.changedTouches[0].clientY - touchStartY;
+      if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy)) return;
+      if (dx < 0) goToSlide(currentIndex + 1);
+      else goToSlide(currentIndex - 1);
+    }, { passive: true });
+
+    goToSlide(0);
   });
 }

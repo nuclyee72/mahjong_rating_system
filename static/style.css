@@ -1083,15 +1083,6 @@ td.winner {
   animation: slideInFromLeft 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
 }
 
-/* 패널 staggered 등장 */
-.form-panel,
-.games-panel,
-.rule-panel,
-.ranking-panel,
-.stats-panel,
-.admin-panel {
-  animation: fadeSlideIn 0.3s ease both;
-}
 
 /* 테이블 행 등장 */
 .anim-row {
@@ -1165,4 +1156,64 @@ select {
 input[type="file"],
 textarea {
   border-radius: 6px;
+}
+
+/* ==================== 모바일 right-panel 스와이프 ==================== */
+@media (max-width: 700px) {
+
+  .main-layout {
+    gap: 8px;
+  }
+
+  .left-panel {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .right-panel {
+    flex: 1;
+    min-width: 0;
+    position: relative;
+  }
+
+  /* 슬라이더 트랙 */
+  .right-panel.swipe-enabled {
+    overflow: hidden;
+  }
+
+  .right-panel.swipe-enabled .swipe-track {
+    display: flex;
+    width: 100%;
+    transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    will-change: transform;
+  }
+
+  .right-panel.swipe-enabled .swipe-track>section {
+    flex: 0 0 100%;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  /* 도트 인디케이터 */
+  .swipe-dots {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .swipe-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #ccc;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+  }
+
+  .swipe-dot.active {
+    background: #4f7dff;
+    transform: scale(1.3);
+  }
 }
