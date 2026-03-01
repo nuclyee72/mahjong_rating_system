@@ -188,6 +188,7 @@ function renderGameList(tbodyId, games, options = {}) {
     order.forEach((o, idx) => (ranks[o.i] = idx + 1));
 
     const tr = document.createElement("tr");
+    tr.className = "anim-row";
 
     // ID, Time (use index if useIndexNumbering is true)
     const displayId = options.useIndexNumbering ? (index + 1) : (g.id || "");
@@ -290,6 +291,7 @@ function renderRankingTable(tbodyId, players, sortState, tableIdForIndicators, e
 
   sorted.forEach((p, idx) => {
     const tr = document.createElement("tr");
+    tr.className = "anim-row";
     tr.innerHTML = `
       <td>${idx + 1}</td>
       <td>${p.name}</td>
@@ -701,6 +703,7 @@ function renderStatsForPlayer(name) {
   if (detail.coPlayers.length) {
     detail.coPlayers.forEach(c => {
       const tr = document.createElement("tr");
+      tr.className = "anim-row";
       tr.innerHTML = `<td>${c.name}</td><td>${c.games}</td><td>${c.my_avg_rank.toFixed(2)}</td><td>${c.co_avg_rank.toFixed(2)}</td>`;
       coTbody.appendChild(tr);
     });
@@ -714,6 +717,7 @@ function renderStatsForPlayer(name) {
     if (detail.gameRecords.length) {
       detail.gameRecords.forEach(rec => {
         const tr = document.createElement("tr");
+        tr.className = "anim-row";
         const tdTime = document.createElement("td");
         tdTime.className = "col-time-hide";
         tdTime.textContent = formatKoreanTime(rec.created_at);
@@ -1031,6 +1035,7 @@ async function reloadArchiveList() {
     else {
       ARCHIVES.forEach(a => {
         const tr = document.createElement("tr");
+        tr.className = "anim-row";
         tr.innerHTML = `<td>${a.name}</td><td>${formatKoreanTime(a.created_at)}</td><td>${a.game_count || 0}</td><td></td>`;
         const btn = document.createElement("button");
         btn.textContent = "삭제";
@@ -1173,6 +1178,7 @@ function renderArchiveStatsForPlayer(name) {
     if (detail.coPlayers.length) {
       detail.coPlayers.forEach(c => {
         const tr = document.createElement("tr");
+        tr.className = "anim-row";
         tr.innerHTML = `<td>${c.name}</td><td>${c.games}</td><td>${c.my_avg_rank.toFixed(2)}</td><td>${c.co_avg_rank.toFixed(2)}</td>`;
         coTbody.appendChild(tr);
       });
@@ -1187,6 +1193,7 @@ function renderArchiveStatsForPlayer(name) {
     if (detail.gameRecords.length) {
       detail.gameRecords.forEach(rec => {
         const tr = document.createElement("tr");
+        tr.className = "anim-row";
         const tdTime = document.createElement("td");
         tdTime.textContent = formatKoreanTime(rec.created_at);
         tr.appendChild(tdTime);
@@ -1383,6 +1390,7 @@ function renderSeasonRankingTable() {
 
   data.forEach((p, idx) => {
     const tr = document.createElement("tr");
+    tr.className = "anim-row";
     tr.innerHTML = `
             <td>${idx + 1}</td>
             <td>${p.name}</td>
@@ -1475,6 +1483,7 @@ async function reloadBadgeList() {
     tbody.innerHTML = "";
     badges.forEach(b => {
       const tr = document.createElement("tr");
+      tr.className = "anim-row";
       tr.innerHTML = `<td>${b.code}</td><td>${b.name}</td><td>${b.grade}</td><td>${b.description || ""}</td><td></td>`;
       const btn = document.createElement("button");
       btn.textContent = "삭제";
