@@ -2216,20 +2216,16 @@ function setupMobileSwipe() {
     if (layout.dataset.mobileInit === '1') return;
     layout.dataset.mobileInit = '1';
 
-    const leftPanel  = layout.querySelector('.left-panel');
+    const leftPanel = layout.querySelector('.left-panel');
     const rightPanel = layout.querySelector('.right-panel');
     if (!leftPanel || !rightPanel) return;
 
-    // 탭 라벨 결정
-    const leftLabel  = '입력/기록';
-    const rightLabel = '랭킹/통계';
-
-    // 탭 UI 생성
+    // 도트 인디케이터 생성
     const tabs = document.createElement('div');
     tabs.className = 'mobile-panel-tabs';
     tabs.innerHTML =
-      '<div class="mobile-panel-tab active" data-idx="0">' + leftLabel + '</div>' +
-      '<div class="mobile-panel-tab"         data-idx="1">' + rightLabel + '</div>';
+      '<div class="mobile-panel-tab active" data-idx="0"></div>' +
+      '<div class="mobile-panel-tab"         data-idx="1"></div>';
     layout.insertBefore(tabs, layout.firstChild);
 
     // track으로 감싸기
@@ -2267,7 +2263,7 @@ function setupMobileSwipe() {
       const dy = e.changedTouches[0].clientY - touchStartY;
       if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy)) return;
       if (dx < 0) goTo(Math.min(currentIdx + 1, 1));
-      else         goTo(Math.max(currentIdx - 1, 0));
+      else goTo(Math.max(currentIdx - 1, 0));
     }, { passive: true });
 
     goTo(0);

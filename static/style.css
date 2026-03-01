@@ -1183,7 +1183,7 @@ textarea {
     width: 100%;
     min-width: 0;
     box-sizing: border-box;
-    padding: 0 10px;
+    padding: 0 18px;
   }
 
   /* right-panel 내부 section들도 세로로 쌓기 */
@@ -1191,28 +1191,33 @@ textarea {
     display: block;
   }
 
-  /* 패널 전환 탭 (좌/우) */
+  /* 사이트 제목 왼쪽 여백 */
+  h1 {
+    text-align: left;
+    padding-left: 14px;
+    font-size: 22px;
+  }
+
+  /* 패널 전환 도트 인디케이터 */
   .mobile-panel-tabs {
     display: flex;
-    border-bottom: 2px solid #e0e0e0;
-    margin-bottom: 8px;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 10px;
+    margin-bottom: 10px;
   }
 
   .mobile-panel-tab {
-    flex: 1;
-    padding: 8px 0;
-    text-align: center;
-    font-size: 13px;
-    font-weight: 600;
-    color: #888;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ccc;
     cursor: pointer;
-    border-bottom: 2px solid transparent;
-    margin-bottom: -2px;
-    transition: color 0.2s, border-color 0.2s;
+    transition: background 0.2s, transform 0.2s;
   }
 
   .mobile-panel-tab.active {
-    color: #4f7dff;
-    border-bottom-color: #4f7dff;
+    background: #4f7dff;
+    transform: scale(1.35);
   }
 }
