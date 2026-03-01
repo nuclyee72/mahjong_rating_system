@@ -996,18 +996,56 @@ td.winner {
   align-items: center;
   gap: 8px;
   margin-bottom: 8px;
+  flex-wrap: nowrap;
+  min-width: 0;
 }
 
 .team-game-row label {
   width: 40px;
+  flex-shrink: 0;
   font-weight: bold;
+  font-size: 13px;
 }
 
-.team-game-row select,
-.team-game-row input {
-  flex: 1;
-  padding: 6px 8px;
+.team-game-row select {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 6px 4px;
   border: 1px solid #ccc;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.team-game-row input[type="number"] {
+  flex: 0 1 80px;
+  min-width: 60px;
+  max-width: 90px;
+  padding: 6px 4px;
+  border: 1px solid #ccc;
+}
+
+@media (max-width: 480px) {
+  .team-game-row {
+    gap: 4px;
+  }
+
+  .team-game-row label {
+    width: 32px;
+    font-size: 12px;
+  }
+
+  .team-game-row select {
+    padding: 5px 2px;
+    font-size: 12px;
+  }
+
+  .team-game-row input[type="number"] {
+    flex: 0 1 65px;
+    min-width: 50px;
+    max-width: 75px;
+    padding: 5px 2px;
+    font-size: 12px;
+  }
 }
 
 /* ==================== 애니메이션 ==================== */
@@ -1211,8 +1249,9 @@ textarea {
   /* 뷰 전환 탭 스크롤 가능하게 */
   .view-switch {
     overflow-x: auto;
+    overflow-y: visible;
     white-space: nowrap;
-    padding-bottom: 2px;
+    padding: 4px 12px 4px 0;
     flex: 1;
     /* 남은 공간 모두 차지 */
     /* 스크롤바 숨기기 */
@@ -1226,6 +1265,9 @@ textarea {
 
   .view-switch-btn {
     flex-shrink: 0;
+    /* 탭 버튼 hover 시 위로 올라가 잘리지 않도록 transform 제거 */
+    transform: none !important;
+    box-shadow: none !important;
   }
 
   .mobile-br {
