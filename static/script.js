@@ -2203,63 +2203,73 @@ function setupRankTrendFilters() {
   });
 }
 
-// ======================= 모바일 Right Panel 스와이프 =======================
+// ======================= 모바일 풀스크린 패널 슬라이드 =======================
 
 function setupMobileSwipe() {
   if (window.innerWidth > 700) return;
 
   document.querySelectorAll('.view').forEach(view => {
-    const rightPanel = view.querySelector('.right-panel');
-    if (!rightPanel) return;
+    const layout = view.querySelector('.main-layout');
+    if (!layout) return;
 
-    const sections = Array.from(rightPanel.children).filter(el => el.tagName === 'SECTION');
-    if (sections.length === 0) return;
+    // 이미 초기화됐으면 스킵
+    if (layout.dataset.mobileInit === '1') return;
+    layout.dataset.mobileInit = '1';
 
-    if (rightPanel.classList.contains('swipe-enabled')) return;
+    const leftPanel  = layout.querySelector('.left-panel');
+    const rightPanel = layout.querySelector('.right-panel');
+    if (!leftPanel || !rightPanel) return;
 
+    // 탭 라벨 결정
+    const leftLabel  = '입력/기록';
+    const rightLabel = '랭킹/통계';
+
+    // 탭 UI 생성
+    const tabs = document.createElement('div');
+    tabs.className = 'mobile-panel-tabs';
+    tabs.innerHTML =
+      '<div class="mobile-panel-tab active" data-idx="0">' + leftLabel + '</div>' +
+      '<div class="mobile-panel-tab"         data-idx="1">' + rightLabel + '</div>';
+    layout.insertBefore(tabs, layout.firstChild);
+
+    // track으로 감싸기
     const track = document.createElement('div');
-    track.className = 'swipe-track';
-    sections.forEach(sec => track.appendChild(sec));
-    rightPanel.appendChild(track);
+    track.className = 'mobile-track';
+    track.appendChild(leftPanel);
+    track.appendChild(rightPanel);
+    layout.appendChild(track);
 
-    const dotsWrap = document.createElement('div');
-    dotsWrap.className = 'swipe-dots';
-    sections.forEach((_, i) => {
-      const dot = document.createElement('div');
-      dot.className = 'swipe-dot' + (i === 0 ? ' active' : '');
-      dot.addEventListener('click', () => goToSlide(i));
-      dotsWrap.appendChild(dot);
-    });
+    let currentIdx = 0;
 
-    rightPanel.classList.add('swipe-enabled');
-    rightPanel.appendChild(dotsWrap);
-
-    let currentIndex = 0;
-
-    function goToSlide(idx) {
-      currentIndex = Math.max(0, Math.min(idx, sections.length - 1));
-      track.style.transform = 'translateX(-' + (currentIndex * 100) + '%)';
-      dotsWrap.querySelectorAll('.swipe-dot').forEach((d, i) => {
-        d.classList.toggle('active', i === currentIndex);
+    function goTo(idx) {
+      currentIdx = idx;
+      track.style.transform = 'translateX(-' + (idx * 100) + '%)';
+      tabs.querySelectorAll('.mobile-panel-tab').forEach((t, i) => {
+        t.classList.toggle('active', i === idx);
       });
     }
 
-    let touchStartX = 0;
-    let touchStartY = 0;
+    // 탭 클릭
+    tabs.querySelectorAll('.mobile-panel-tab').forEach((tab, i) => {
+      tab.addEventListener('click', () => goTo(i));
+    });
 
-    rightPanel.addEventListener('touchstart', e => {
+    // 터치 스와이프
+    let touchStartX = 0, touchStartY = 0;
+
+    layout.addEventListener('touchstart', e => {
       touchStartX = e.touches[0].clientX;
       touchStartY = e.touches[0].clientY;
     }, { passive: true });
 
-    rightPanel.addEventListener('touchend', e => {
+    layout.addEventListener('touchend', e => {
       const dx = e.changedTouches[0].clientX - touchStartX;
       const dy = e.changedTouches[0].clientY - touchStartY;
       if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy)) return;
-      if (dx < 0) goToSlide(currentIndex + 1);
-      else goToSlide(currentIndex - 1);
+      if (dx < 0) goTo(Math.min(currentIdx + 1, 1));
+      else         goTo(Math.max(currentIdx - 1, 0));
     }, { passive: true });
 
-    goToSlide(0);
+    goTo(0);
   });
 }
