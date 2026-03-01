@@ -18,6 +18,11 @@ h1 {
   font-size: 28px;
 }
 
+/* 모바일 전용 줄바꿈 */
+.mobile-br {
+  display: none;
+}
+
 section {
   margin-bottom: 16px;
 }
@@ -1191,11 +1196,16 @@ textarea {
     display: block;
   }
 
-  /* 사이트 제목 왼쪽 여백 */
+  /* 사이트 제목 왼쪽/오른쪽 여백 */
   h1 {
     text-align: left;
     padding-left: 14px;
+    padding-right: 14px;
     font-size: 22px;
+  }
+
+  .mobile-br {
+    display: block;
   }
 
   /* 패널 전환 도트 인디케이터 */
