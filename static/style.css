@@ -1163,6 +1163,7 @@ textarea {
 
   .main-layout {
     gap: 8px;
+    padding: 0 8px;
   }
 
   .left-panel {
