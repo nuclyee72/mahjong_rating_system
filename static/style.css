@@ -1,4 +1,4 @@
-﻿/* ==================== 기본 설정 ==================== */
+/* ==================== 기본 설정 ==================== */
 html {
   overflow-y: scroll;
   scrollbar-gutter: stable;
@@ -919,134 +919,6 @@ td.winner {
   max-width: 100%;
 }
 
-/* Team Management Styles */
-.team-list {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.team-card {
-  background: #fdfdfd;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 15px;
-}
-
-.team-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-}
-
-.team-header h3 {
-  margin: 0;
-  font-size: 1.1em;
-}
-
-.team-members {
-  margin-bottom: 10px;
-  font-size: 0.9em;
-  color: #555;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.team-member-chip {
-  background: #eee;
-  padding: 2px 8px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.team-member-chip .del-btn {
-  cursor: pointer;
-  color: #999;
-  font-weight: bold;
-  font-size: 0.8em;
-}
-
-.team-member-chip .del-btn:hover {
-  color: #f00;
-}
-
-.team-add-member {
-  display: flex;
-  gap: 6px;
-}
-
-.team-add-member input {
-  flex: 1;
-  padding: 4px 8px;
-  font-size: 0.9em;
-}
-
-.team-add-member button {
-  padding: 4px 10px;
-  font-size: 0.9em;
-}
-
-/* Team Game Input Styles */
-.team-game-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-  flex-wrap: nowrap;
-  min-width: 0;
-}
-
-.team-game-row label {
-  width: 40px;
-  flex-shrink: 0;
-  font-weight: bold;
-  font-size: 13px;
-}
-
-.team-game-row select {
-  flex: 1 1 0;
-  min-width: 0;
-  padding: 6px 4px;
-  border: 1px solid #ccc;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.team-game-row input[type="number"] {
-  flex: 0 1 80px;
-  min-width: 60px;
-  max-width: 90px;
-  padding: 6px 4px;
-  border: 1px solid #ccc;
-}
-
-@media (max-width: 480px) {
-  .team-game-row {
-    gap: 4px;
-  }
-
-  .team-game-row label {
-    width: 32px;
-    font-size: 12px;
-  }
-
-  .team-game-row select {
-    padding: 5px 2px;
-    font-size: 12px;
-  }
-
-  .team-game-row input[type="number"] {
-    flex: 0 1 65px;
-    min-width: 50px;
-    max-width: 75px;
-    padding: 5px 2px;
-    font-size: 12px;
-  }
-}
 
 /* ==================== 애니메이션 ==================== */
 
@@ -1063,17 +935,6 @@ td.winner {
   }
 }
 
-@keyframes rowFadeIn {
-  from {
-    opacity: 0;
-    transform: translateX(-6px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
 
 @keyframes winnerPulse {
 
@@ -1168,15 +1029,6 @@ button:active {
   box-shadow: 0 2px 8px rgba(224, 80, 80, 0.35);
 }
 
-/* 팀 카드 hover 효과 */
-.team-card {
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.team-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
-}
 
 /* ==================== 입력 칸 공통 스타일 ==================== */
 input[type="text"],
@@ -1296,21 +1148,4 @@ textarea {
     background: #4f7dff;
     transform: scale(1.35);
   }
-}
-
-/* ==================== 행 로딩 애니메이션 ==================== */
-@keyframes rowFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-6px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.anim-row {
-  animation: rowFadeIn 0.22s ease both;
 }

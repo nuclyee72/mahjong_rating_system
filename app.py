@@ -1,4 +1,4 @@
-﻿from flask import Flask, request, jsonify, render_template, Response, redirect, url_for
+from flask import Flask, Blueprint, request, jsonify, render_template, Response, redirect, url_for
 from flask_cors import CORS
 import sqlite3
 from datetime import datetime
@@ -9,6 +9,7 @@ from PIL import Image, ImageOps
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "games.db")
+SCHEDULE_DB_PATH = os.path.join(BASE_DIR, "schedules.db")
 CLUB_NAME = "그릴마당"  # 동아리 이름 (변경 가능)
 
 # 마작 포인트 계산용 상수
@@ -22,6 +23,30 @@ def get_db():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
+
+def get_schedule_db():
+    conn = sqlite3.connect(SCHEDULE_DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+def init_schedule_db():
+    conn = get_schedule_db()
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS schedules (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            date TEXT NOT NULL,
+            time_start TEXT,
+            time_end TEXT,
+            location TEXT,
+            description TEXT,
+            requester_name TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'pending',
+            created_at TEXT NOT NULL
+        )
+    """)
+    conn.commit()
+    conn.close()
 
 
 def init_db():
@@ -105,59 +130,6 @@ def init_db():
             player4_score INTEGER NOT NULL
         )
     """)
-
-    # 팀 정의
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS teams (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT UNIQUE NOT NULL,
-            color TEXT,
-            created_at TEXT NOT NULL
-        )
-    """)
-
-    # 기존 팀 테이블에 color 컬럼이 없으면 추가 (마이그레이션)
-    try:
-        conn.execute("ALTER TABLE teams ADD COLUMN color TEXT")
-    except sqlite3.OperationalError:
-        pass
-        
-    try:
-        conn.execute("ALTER TABLE teams ADD COLUMN logo TEXT")
-    except sqlite3.OperationalError:
-        pass
-
-    # 팀 멤버 (1:N 관계로 가정 - 한 명의 플레이어가 여러 팀에 속할지 여부는 기획에 따라 다르지만, 여기서는 자유롭게 추가 가능하게)
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS team_members (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            team_id INTEGER NOT NULL,
-            player_name TEXT NOT NULL,
-            joined_at TEXT NOT NULL,
-            UNIQUE(team_id, player_name)
-        )
-    """)
-
-    # 팀 대국 기록
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS team_games (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            created_at TEXT NOT NULL,
-            player1_team_id INTEGER,
-            player1_name TEXT,
-            player1_score INTEGER,
-            player2_team_id INTEGER,
-            player2_name TEXT,
-            player2_score INTEGER,
-            player3_team_id INTEGER,
-            player3_name TEXT,
-            player3_score INTEGER,
-            player4_team_id INTEGER,
-            player4_name TEXT,
-            player4_score INTEGER
-        )
-    """)
-
     conn.commit()
     conn.close()
 
@@ -167,6 +139,12 @@ app = Flask(__name__, static_folder="static", template_folder="templates")
 app.config['JSON_AS_ASCII'] = False
 # HTML 템플릿 자동 리로드 (파일 수정 시 서버 재시작 없이 반영)
 app.config['TEMPLATES_AUTO_RELOAD'] = True
+
+# 마작 레이팅 서브 앱 Blueprint
+mahjong_bp = Blueprint('mahjong', __name__)
+
+# 일정 캘린더 서브 앱 Blueprint
+schedule_bp = Blueprint('schedule', __name__)
 
 @app.context_processor
 def inject_club_name():
@@ -180,7 +158,7 @@ init_db()
 
 # ================== 개인전 API ==================
 
-@app.route("/api/games", methods=["GET"])
+@mahjong_bp.route("/api/games", methods=["GET"])
 def list_games():
     conn = get_db()
     cur = conn.execute("SELECT * FROM games ORDER BY id DESC")
@@ -189,7 +167,7 @@ def list_games():
     return jsonify([dict(row) for row in rows])
 
 
-@app.route("/api/games", methods=["POST"])
+@mahjong_bp.route("/api/games", methods=["POST"])
 def create_game():
     data = request.get_json() or {}
 
@@ -236,7 +214,7 @@ def create_game():
     return jsonify({"id": new_id}), 201
 
 
-@app.route("/api/games/<int:game_id>", methods=["DELETE"])
+@mahjong_bp.route("/api/games/<int:game_id>", methods=["DELETE"])
 def delete_game(game_id):
     conn = get_db()
     cur = conn.execute("DELETE FROM games WHERE id = ?", (game_id,))
@@ -251,7 +229,7 @@ def delete_game(game_id):
 
 # ---- 개인전 CSV 내보내기 ----
 
-@app.route("/export", methods=["GET"])
+@mahjong_bp.route("/export", methods=["GET"])
 def export_games():
     conn = get_db()
     cur = conn.execute("""
@@ -322,7 +300,7 @@ def export_games():
 
 # ---- 개인전 CSV 업로드 ----
 
-@app.route("/import", methods=["GET", "POST"])
+@mahjong_bp.route("/import", methods=["GET", "POST"])
 def import_games():
     if request.method == "GET":
         return f"""
@@ -337,7 +315,7 @@ def import_games():
           <div class="top-bar">
             <h1>{CLUB_NAME} 개인전 CSV 업로드</h1>
             <div class="view-switch">
-              <a href="/" class="view-switch-btn">메인으로 돌아가기</a>
+              <a href="/mahjong_rating" class="view-switch-btn">메인으로 돌아가기</a>
             </div>
           </div>
           <div class="main-layout">
@@ -437,9 +415,9 @@ def import_games():
     conn.close()
 
     print(f"[IMPORT] inserted rows: {inserted}")
-    return redirect(url_for("index_page"))
+    return redirect(url_for("mahjong.index_page"))
 
-@app.route("/api/tournament_games", methods=["GET"])
+@mahjong_bp.route("/api/tournament_games", methods=["GET"])
 def list_tournament_games():
     conn = get_db()
     cur = conn.execute("SELECT * FROM tournament_games ORDER BY id DESC")
@@ -448,7 +426,7 @@ def list_tournament_games():
     return jsonify([dict(row) for row in rows])
 
 
-@app.route("/api/tournament_games", methods=["POST"])
+@mahjong_bp.route("/api/tournament_games", methods=["POST"])
 def create_tournament_game():
     data = request.get_json() or {}
 
@@ -495,7 +473,7 @@ def create_tournament_game():
     return jsonify({"id": new_id}), 201
 
 
-@app.route("/api/tournament_games/<int:game_id>", methods=["DELETE"])
+@mahjong_bp.route("/api/tournament_games/<int:game_id>", methods=["DELETE"])
 def delete_tournament_game(game_id):
     conn = get_db()
     cur = conn.execute("DELETE FROM tournament_games WHERE id = ?", (game_id,))
@@ -509,7 +487,7 @@ def delete_tournament_game(game_id):
 
 # ================== 뱃지 / 관리자 API ==================
 
-@app.route("/api/badges", methods=["GET", "POST"])
+@mahjong_bp.route("/api/badges", methods=["GET", "POST"])
 def badges_api():
     if request.method == "POST":
         data = request.get_json() or {}
@@ -551,7 +529,7 @@ def badges_api():
     return jsonify(rows)
 
 
-@app.route("/api/badges/<int:badge_id>", methods=["DELETE"])
+@mahjong_bp.route("/api/badges/<int:badge_id>", methods=["DELETE"])
 def delete_badge(badge_id):
     conn = get_db()
     cur = conn.execute("SELECT code FROM badges WHERE id = ?", (badge_id,))
@@ -572,7 +550,7 @@ def delete_badge(badge_id):
         return jsonify({"error": "badge not found"}), 404
     return jsonify({"ok": True})
 
-@app.route("/api/player_badges", methods=["GET", "POST"])
+@mahjong_bp.route("/api/player_badges", methods=["GET", "POST"])
 def player_badges_api():
     if request.method == "GET":
         conn = get_db()
@@ -635,7 +613,7 @@ def player_badges_api():
 
 
 
-@app.route("/api/player_badges/by_player/<player_name>", methods=["GET"])
+@mahjong_bp.route("/api/player_badges/by_player/<player_name>", methods=["GET"])
 def list_player_badges(player_name):
     name = player_name.strip()
     conn = get_db()
@@ -670,7 +648,7 @@ def list_player_badges(player_name):
     return jsonify(result)
 
 
-@app.route("/api/player_badges/<int:assign_id>", methods=["DELETE"])
+@mahjong_bp.route("/api/player_badges/<int:assign_id>", methods=["DELETE"])
 def delete_player_badge(assign_id):
     conn = get_db()
     cur = conn.execute("DELETE FROM player_badges WHERE id = ?", (assign_id,))
@@ -686,7 +664,7 @@ def delete_player_badge(assign_id):
 
 # ================== 뱃지 CSV 내보내기/업로드 ==================
 
-@app.route("/export_badges", methods=["GET"])
+@mahjong_bp.route("/export_badges", methods=["GET"])
 def export_badges():
     conn = get_db()
     cur = conn.execute("""
@@ -715,7 +693,7 @@ def export_badges():
     )
 
 
-@app.route("/import_badges", methods=["GET", "POST"])
+@mahjong_bp.route("/import_badges", methods=["GET", "POST"])
 def import_badges():
     if request.method == "GET":
         return f"""
@@ -730,7 +708,7 @@ def import_badges():
           <div class="top-bar">
             <h1>{CLUB_NAME} 뱃지 목록 CSV 업로드</h1>
             <div class="view-switch">
-              <a href="/" class="view-switch-btn">메인으로 돌아가기</a>
+              <a href="/mahjong_rating" class="view-switch-btn">메인으로 돌아가기</a>
             </div>
           </div>
           <div class="main-layout">
@@ -818,12 +796,12 @@ def import_badges():
     conn.close()
 
     print(f"[IMPORT_BADGES] inserted={inserted}, updated={updated}")
-    return redirect(url_for("index_page"))
+    return redirect(url_for("mahjong.index_page"))
 
 
 # ================== 플레이어 뱃지 부여 CSV 내보내기/업로드 ==================
 
-@app.route("/export_player_badges", methods=["GET"])
+@mahjong_bp.route("/export_player_badges", methods=["GET"])
 def export_player_badges():
     conn = get_db()
     cur = conn.execute("""
@@ -869,7 +847,7 @@ def export_player_badges():
     )
 
 
-@app.route("/import_player_badges", methods=["GET", "POST"])
+@mahjong_bp.route("/import_player_badges", methods=["GET", "POST"])
 def import_player_badges():
     if request.method == "GET":
         return f"""
@@ -884,7 +862,7 @@ def import_player_badges():
           <div class="top-bar">
             <h1>{CLUB_NAME} 플레이어 뱃지 부여 CSV 업로드</h1>
             <div class="view-switch">
-              <a href="/" class="view-switch-btn">메인으로 돌아가기</a>
+              <a href="/mahjong_rating" class="view-switch-btn">메인으로 돌아가기</a>
             </div>
           </div>
           <div class="main-layout">
@@ -976,12 +954,12 @@ def import_player_badges():
     conn.close()
 
     print(f"[IMPORT_PLAYER_BADGES] inserted={inserted}, skipped={skipped}")
-    return redirect(url_for("index_page"))
+    return redirect(url_for("mahjong.index_page"))
 
 
 # ================== 아카이브 API ==================
 
-@app.route("/api/archives", methods=["GET"])
+@mahjong_bp.route("/api/archives", methods=["GET"])
 def archives_api():
     conn = get_db()
     cur = conn.execute(
@@ -1002,7 +980,7 @@ def archives_api():
     return jsonify(rows)
 
 
-@app.route("/api/archives/<int:archive_id>/games", methods=["GET"])
+@mahjong_bp.route("/api/archives/<int:archive_id>/games", methods=["GET"])
 def archive_games_api(archive_id):
     conn = get_db()
     cur = conn.execute(
@@ -1023,7 +1001,7 @@ def archive_games_api(archive_id):
     return jsonify(rows)
 
 
-@app.route("/api/archives/<int:archive_id>", methods=["DELETE"])
+@mahjong_bp.route("/api/archives/<int:archive_id>", methods=["DELETE"])
 def delete_archive(archive_id):
     conn = get_db()
     conn.execute("DELETE FROM archive_games WHERE archive_id = ?", (archive_id,))
@@ -1035,7 +1013,7 @@ def delete_archive(archive_id):
         return jsonify({"error": "archive not found"}), 404
     return jsonify({"ok": True})
 
-@app.route("/admin/archive_import", methods=["POST"])
+@mahjong_bp.route("/admin/archive_import", methods=["POST"])
 def admin_archive_import():
     archive_name = (request.form.get("archive_name") or "").strip()
     file = request.files.get("file")
@@ -1145,11 +1123,11 @@ def admin_archive_import():
     conn.close()
 
     # 다시 메인 화면으로
-    return redirect(url_for("index_page"))
+    return redirect(url_for("mahjong.index_page"))
 
 # ---- 대회전 CSV 내보내기 ----
 
-@app.route("/export_tournament", methods=["GET"])
+@mahjong_bp.route("/export_tournament", methods=["GET"])
 def export_tournament_games():
     conn = get_db()
     cur = conn.execute("""
@@ -1221,7 +1199,7 @@ def export_tournament_games():
 
 # ---- 대회전 CSV 업로드 ----
 
-@app.route("/import_tournament", methods=["GET", "POST"])
+@mahjong_bp.route("/import_tournament", methods=["GET", "POST"])
 def import_tournament_games():
     if request.method == "GET":
         return f"""
@@ -1236,7 +1214,7 @@ def import_tournament_games():
           <div class="top-bar">
             <h1>{CLUB_NAME} 대회전 CSV 업로드</h1>
             <div class="view-switch">
-              <a href="/" class="view-switch-btn">메인으로 돌아가기</a>
+              <a href="/mahjong_rating" class="view-switch-btn">메인으로 돌아가기</a>
             </div>
           </div>
           <div class="main-layout">
@@ -1336,11 +1314,11 @@ def import_tournament_games():
     conn.close()
 
     print(f"[IMPORT_TOURNAMENT] inserted rows: {inserted}")
-    return redirect(url_for("index_page"))
+    return redirect(url_for("mahjong.index_page"))
 
 # ================== 개인전 기록 초기화(시즌 리셋) ==================
 
-@app.route("/api/admin/reset_games", methods=["POST"])
+@mahjong_bp.route("/api/admin/reset_games", methods=["POST"])
 def reset_games():
     """
     모든 개인전 대국 기록을 삭제하고 ID도 다시 1부터 시작하도록 초기화합니다.
@@ -1364,7 +1342,7 @@ def reset_games():
 
     return jsonify({"ok": True})
 
-@app.route("/api/admin/reset_tournament", methods=["POST"])
+@mahjong_bp.route("/api/admin/reset_tournament", methods=["POST"])
 def reset_tournament():
     """
     모든 대회 대국 기록을 삭제하고 ID도 다시 1부터 시작하도록 초기화합니다.
@@ -1387,372 +1365,93 @@ def reset_tournament():
 
     return jsonify({"ok": True})
 
-# ================== 팀전 API ==================
-
-@app.route("/api/teams", methods=["GET"])
-def list_teams():
-    conn = get_db()
-    # 팀 목록 가져오기
-    cur = conn.execute("SELECT * FROM teams ORDER BY name ASC")
-    teams = [dict(row) for row in cur.fetchall()]
-    
-    # 각 팀의 멤버 가져오기
-    for t in teams:
-        cur_m = conn.execute("SELECT id, player_name, joined_at FROM team_members WHERE team_id = ?", (t["id"],))
-        t["members"] = [dict(row) for row in cur_m.fetchall()]
-        
-    conn.close()
-    return jsonify(teams)
-
-
-@app.route("/api/teams", methods=["POST"])
-def create_team():
-    data = request.get_json() or {}
-    name = str(data.get("name", "")).strip()
-    color = str(data.get("color", "")).strip()  # 색상 추가
-
-    if not name:
-        return jsonify({"error": "team name required"}), 400
-        
-    conn = get_db()
-    created_at = datetime.now().isoformat(timespec="minutes")
-    try:
-        cur = conn.execute("INSERT INTO teams (name, color, created_at) VALUES (?, ?, ?)", (name, color, created_at))
-        conn.commit()
-        new_id = cur.lastrowid
-    except sqlite3.IntegrityError:
-        conn.close()
-        return jsonify({"error": "team name already exists"}), 400
-    conn.close()
-    return jsonify({"id": new_id}), 201
-
-
-@app.route("/api/teams/<int:team_id>", methods=["DELETE"])
-def delete_team(team_id):
-    conn = get_db()
-    # 로고 파일이 있다면 삭제
-    cur = conn.execute("SELECT logo FROM teams WHERE id = ?", (team_id,))
-    row = cur.fetchone()
-    if row and row["logo"]:
-        logo_path = os.path.join(BASE_DIR, row["logo"].lstrip("/"))
-        if os.path.exists(logo_path):
-            try:
-                os.remove(logo_path)
-            except OSError:
-                pass
-                
-    # 멤버도 삭제
-    conn.execute("DELETE FROM team_members WHERE team_id = ?", (team_id,))
-    # 팀 삭제
-    cur = conn.execute("DELETE FROM teams WHERE id = ?", (team_id,))
-    conn.commit()
-    deleted = cur.rowcount
-    conn.close()
-    
-    if deleted == 0:
-        return jsonify({"error": "team not found"}), 404
-    return jsonify({"ok": True})
-
-
-@app.route("/api/teams/<int:team_id>", methods=["PUT"])
-def update_team(team_id):
-    data = request.get_json() or {}
-    color = data.get("color")
-    name = data.get("name")
-
-    if color is None and name is None:
-        return jsonify({"error": "color or name is required"}), 400
-
-    conn = get_db()
-
-    # 팀 존재 여부 확인
-    cur = conn.execute("SELECT id FROM teams WHERE id = ?", (team_id,))
-    if not cur.fetchone():
-        conn.close()
-        return jsonify({"error": "team not found"}), 404
-
-    if name is not None:
-        new_name = str(name).strip()
-        if not new_name:
-            conn.close()
-            return jsonify({"error": "team name cannot be empty"}), 400
-        try:
-            conn.execute("UPDATE teams SET name = ? WHERE id = ?", (new_name, team_id))
-        except sqlite3.IntegrityError:
-            conn.close()
-            return jsonify({"error": "team name already exists"}), 400
-
-    if color is not None:
-        conn.execute("UPDATE teams SET color = ? WHERE id = ?", (str(color).strip(), team_id))
-
-    conn.commit()
-    conn.close()
-
-    return jsonify({"ok": True})
-
-
-@app.route("/api/teams/<int:team_id>/logo", methods=["POST"])
-def upload_team_logo(team_id):
-    if "logo" not in request.files:
-        return jsonify({"error": "No logo file provided"}), 400
-        
-    file = request.files["logo"]
-    if file.filename == "":
-        return jsonify({"error": "No selected file"}), 400
-        
-    try:
-        # Open the image using Pillow
-        img = Image.open(file)
-        
-        # Convert image to RGBA if not already to support transparency
-        if img.mode != 'RGBA':
-            img = img.convert('RGBA')
-            
-        # Safely extract square center crop and resize identically without float interpolations
-        img = ImageOps.fit(img, (500, 500), method=Image.Resampling.LANCZOS)
-        
-        # Ensure directory exists
-        logos_dir = os.path.join(BASE_DIR, "static", "logos")
-        os.makedirs(logos_dir, exist_ok=True)
-        
-        # Save image as PNG to preserve transparency
-        filename = f"team_{team_id}.png"
-        filepath = os.path.join(logos_dir, filename)
-        img.save(filepath, "PNG")
-
-        # Update database
-        logo_url = f"/static/logos/{filename}"
-        conn = get_db()
-        cur = conn.execute("UPDATE teams SET logo = ? WHERE id = ?", (logo_url, team_id))
-        conn.commit()
-        
-        if cur.rowcount == 0:
-            conn.close()
-            # Clean up the file if team doesn't exist
-            if os.path.exists(filepath):
-                os.remove(filepath)
-            return jsonify({"error": "Team not found"}), 404
-            
-        conn.close()
-        return jsonify({"ok": True, "logo": logo_url})
-        
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/api/teams/<int:team_id>/members", methods=["POST"])
-def add_team_member(team_id):
-    data = request.get_json() or {}
-    player_name = str(data.get("player_name", "")).strip()
-    if not player_name:
-        return jsonify({"error": "player name required"}), 400
-        
-    created_at = datetime.now().isoformat(timespec="minutes")
-    conn = get_db()
-    try:
-        conn.execute("INSERT INTO team_members (team_id, player_name, joined_at) VALUES (?, ?, ?)", 
-                     (team_id, player_name, created_at))
-        conn.commit()
-    except sqlite3.IntegrityError:
-        conn.close()
-        return jsonify({"error": "already joined"}), 400
-    conn.close()
-    return jsonify({"ok": True}), 201
-
-
-@app.route("/api/team_members/<int:member_id>", methods=["DELETE"])
-def delete_team_member(member_id):
-    conn = get_db()
-    cur = conn.execute("DELETE FROM team_members WHERE id = ?", (member_id,))
-    conn.commit()
-    deleted = cur.rowcount
-    conn.close()
-    
-    if deleted == 0:
-        return jsonify({"error": "member not found"}), 404
-    return jsonify({"ok": True})
-
-
-@app.route("/api/team_games", methods=["GET"])
-def list_team_games():
-    conn = get_db()
-    
-    # 조인을 통해 팀 이름을 가져옴
-    query = """
-        SELECT 
-            g.*,
-            t1.name as player1_team_name,
-            t2.name as player2_team_name,
-            t3.name as player3_team_name,
-            t4.name as player4_team_name
-        FROM team_games g
-        LEFT JOIN teams t1 ON g.player1_team_id = t1.id
-        LEFT JOIN teams t2 ON g.player2_team_id = t2.id
-        LEFT JOIN teams t3 ON g.player3_team_id = t3.id
-        LEFT JOIN teams t4 ON g.player4_team_id = t4.id
-        ORDER BY g.id DESC
-    """
-    cur = conn.execute(query)
-    rows = cur.fetchall()
-    conn.close()
-    return jsonify([dict(row) for row in rows])
-
-
-@app.route("/api/team_games", methods=["POST"])
-def create_team_game():
-    data = request.get_json() or {}
-    
-    # data format expectation:
-    # { 
-    #   player1: { team_id: 1, name: "foo", score: 25000 },
-    #   player2: { ... }, ...
-    # }
-    
-    try:
-        p1 = data["player1"]
-        p2 = data["player2"]
-        p3 = data["player3"]
-        p4 = data["player4"]
-        
-        s1 = int(p1["score"])
-        s2 = int(p2["score"])
-        s3 = int(p3["score"])
-        s4 = int(p4["score"])
-        
-        if (s1 + s2 + s3 + s4) != 100000:
-            return jsonify({"error": "total score must be 100000"}), 400
-            
-        created_at = datetime.now().isoformat(timespec="minutes")
-        
-        conn = get_db()
-        conn.execute("""
-            INSERT INTO team_games (
-                created_at,
-                player1_team_id, player1_name, player1_score,
-                player2_team_id, player2_name, player2_score,
-                player3_team_id, player3_name, player3_score,
-                player4_team_id, player4_name, player4_score
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            created_at,
-            p1["team_id"], p1["name"], s1,
-            p2["team_id"], p2["name"], s2,
-            p3["team_id"], p3["name"], s3,
-            p4["team_id"], p4["name"], s4
-        ))
-        conn.commit()
-        conn.close()
-        
-        return jsonify({"ok": True}), 201
-        
-    except (KeyError, ValueError, TypeError) as e:
-        return jsonify({"error": str(e)}), 400
-
-
-@app.route("/api/team_games/<int:game_id>", methods=["DELETE"])
-def delete_team_game(game_id):
-    conn = get_db()
-    cur = conn.execute("DELETE FROM team_games WHERE id = ?", (game_id,))
-    conn.commit()
-    deleted = cur.rowcount
-    conn.close()
-    
-    if deleted == 0:
-        return jsonify({"error": "game not found"}), 404
-    return jsonify({"ok": True})
-
-
-@app.route("/api/team_ranking", methods=["GET"])
-def team_ranking():
-    conn = get_db()
-    
-    # 1. 모든 팀 게임 가져오기
-    query = """
-        SELECT 
-            g.*,
-            t1.name as player1_team_name,
-            t2.name as player2_team_name,
-            t3.name as player3_team_name,
-            t4.name as player4_team_name
-        FROM team_games g
-        LEFT JOIN teams t1 ON g.player1_team_id = t1.id
-        LEFT JOIN teams t2 ON g.player2_team_id = t2.id
-        LEFT JOIN teams t3 ON g.player3_team_id = t3.id
-        LEFT JOIN teams t4 ON g.player4_team_id = t4.id
-    """
-    cur = conn.execute(query)
-    games = [dict(row) for row in cur.fetchall()]
-    conn.close()
-    
-    # 2. 팀별 통계 집계
-    team_stats = {}  # team_name -> { games, total_pt, rank_counts: [0,0,0,0] }
-    
-    def calc_pts(scores):
-        # 복제
-        order = sorted(range(4), key=lambda i: scores[i], reverse=True)
-        # 우마
-        uma_vals = UMA_VALUES # Global config
-        uma_applied = [0]*4
-        for r, idx in enumerate(order):
-            uma_applied[idx] = uma_vals[r]
-            
-        final_pts = []
-        for i in range(4):
-            # (점수 - 반환점) / 1000 + 우마
-            pt = (scores[i] - RETURN_SCORE) / 1000.0 + uma_applied[i]
-            final_pts.append(pt)
-        return final_pts, order # pts array, and order (list of indices sorted by score desc)
-
-    for g in games:
-        scores = [g["player1_score"], g["player2_score"], g["player3_score"], g["player4_score"]]
-        team_names = [g["player1_team_name"], g["player2_team_name"], g["player3_team_name"], g["player4_team_name"]]
-        
-        # 이름이 없는 경우(삭제된 팀 등) 무시하거나 별도 처리? 일단 이름 있으면 집계
-        
-        pts, order = calc_pts(scores)
-        
-        # 순위(1~4) 구하기
-        # order: [idx_1st, idx_2nd, idx_3rd, idx_4th]
-        ranks = [0]*4
-        for rank_idx, original_idx in enumerate(order):
-            ranks[original_idx] = rank_idx + 1
-            
-        for i in range(4):
-            tname = team_names[i]
-            if not tname: continue
-            
-            if tname not in team_stats:
-                team_stats[tname] = { "games": 0, "total_pt": 0.0, "rank_counts": [0,0,0,0] }
-            
-            team_stats[tname]["games"] += 1
-            team_stats[tname]["total_pt"] += pts[i]
-            team_stats[tname]["rank_counts"][ranks[i]-1] += 1
-
-    # 3. 리스트 변환 및 정렬 (총 pt 내림차순)
-    results = []
-    for name, st in team_stats.items():
-        avg = st["total_pt"] / st["games"] if st["games"] > 0 else 0
-        results.append({
-            "name": name,
-            "games": st["games"],
-            "total_pt": round(st["total_pt"], 1),
-            "avg_pt": round(avg, 1),
-            "rank_counts": st["rank_counts"]
-        })
-        
-    results.sort(key=lambda x: x["total_pt"], reverse=True)
-    
-    return jsonify(results)
-
 
 # ================== 기본 페이지 ==================
 
-@app.route("/")
+@mahjong_bp.route("/")
 def index_page():
     return render_template("index.html", club_name=CLUB_NAME)
 
 
+@app.route("/")
+def landing_page():
+    return render_template("landing.html", club_name=CLUB_NAME)
+
+# ================== 동아리 일정 관리 (schedule) ==================
+
+@schedule_bp.route("/")
+def schedule_page():
+    return render_template("schedule.html", club_name=CLUB_NAME)
+
+@schedule_bp.route("/admin")
+def schedule_admin_page():
+    return render_template("schedule_admin.html", club_name=CLUB_NAME)
+
+@schedule_bp.route("/api/events", methods=["GET"])
+def get_schedule_events():
+    conn = get_schedule_db()
+    cur = conn.execute("SELECT * FROM schedules WHERE status = 'confirmed' ORDER BY date ASC, time_start ASC")
+    rows = cur.fetchall()
+    conn.close()
+    return jsonify([dict(row) for row in rows])
+
+@schedule_bp.route("/api/pending", methods=["GET"])
+def get_pending_schedules():
+    conn = get_schedule_db()
+    cur = conn.execute("SELECT * FROM schedules WHERE status = 'pending' ORDER BY created_at DESC")
+    rows = cur.fetchall()
+    conn.close()
+    return jsonify([dict(row) for row in rows])
+
+@schedule_bp.route("/api/request", methods=["POST"])
+def request_schedule():
+    data = request.get_json() or {}
+    title = data.get("title", "").strip()
+    date = data.get("date", "").strip()
+    time_start = data.get("time_start", "").strip()
+    time_end = data.get("time_end", "").strip()
+    location = data.get("location", "").strip()
+    description = data.get("description", "").strip()
+    requester = data.get("requester_name", "").strip()
+
+    if not title or not date or not requester:
+        return jsonify({"error": "Required fields: title, date, requester_name"}), 400
+
+    created_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    conn = get_schedule_db()
+    conn.execute(
+        "INSERT INTO schedules (title, date, time_start, time_end, location, description, requester_name, status, created_at) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?)",
+        (title, date, time_start, time_end, location, description, requester, created_at)
+    )
+    conn.commit()
+    conn.close()
+
+    return jsonify({"ok": True, "message": "Schedule request submitted successfully."})
+
+@schedule_bp.route("/api/confirm/<int:schedule_id>", methods=["PUT"])
+def confirm_schedule(schedule_id):
+    conn = get_schedule_db()
+    conn.execute("UPDATE schedules SET status = 'confirmed' WHERE id = ?", (schedule_id,))
+    conn.commit()
+    conn.close()
+    return jsonify({"ok": True})
+
+@schedule_bp.route("/api/<int:schedule_id>", methods=["DELETE"])
+def delete_schedule(schedule_id):
+    conn = get_schedule_db()
+    conn.execute("DELETE FROM schedules WHERE id = ?", (schedule_id,))
+    conn.commit()
+    conn.close()
+    return jsonify({"ok": True})
+
+app.register_blueprint(mahjong_bp, url_prefix="/mahjong_rating")
+app.register_blueprint(schedule_bp, url_prefix="/schedule")
+
 if __name__ == "__main__":
     if not os.path.exists(DB_PATH):
         init_db()
+    if not os.path.exists(SCHEDULE_DB_PATH):
+        init_schedule_db()
     app.run(host="0.0.0.0", port=5000, debug=True)

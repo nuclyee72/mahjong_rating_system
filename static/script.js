@@ -1,4 +1,5 @@
-﻿// ===== 공통 상수 =====
+// ===== 공통 상수 =====
+const API_BASE = "/mahjong_rating";
 const UMA_VALUES = (window.GAME_CONFIG && window.GAME_CONFIG.uma) ? window.GAME_CONFIG.uma : [50, 10, -10, -30];
 const RETURN_SCORE = (window.GAME_CONFIG && window.GAME_CONFIG.return_score) ? Number(window.GAME_CONFIG.return_score) : 30000;
 
@@ -188,8 +189,7 @@ function renderGameList(tbodyId, games, options = {}) {
     order.forEach((o, idx) => (ranks[o.i] = idx + 1));
 
     const tr = document.createElement("tr");
-    tr.className = "anim-row";
-    tr.style.animationDelay = `${index * 30}ms`;
+    tr.className = ""
 
     // ID, Time (use index if useIndexNumbering is true)
     const displayId = options.useIndexNumbering ? (index + 1) : (g.id || "");
@@ -292,8 +292,7 @@ function renderRankingTable(tbodyId, players, sortState, tableIdForIndicators, e
 
   sorted.forEach((p, idx) => {
     const tr = document.createElement("tr");
-    tr.className = "anim-row";
-    tr.style.animationDelay = `${idx * 30}ms`;
+    tr.className = ""
     tr.innerHTML = `
       <td>${idx + 1}</td>
       <td>${p.name}</td>
@@ -330,8 +329,6 @@ document.addEventListener("DOMContentLoaded", () => {
   setupTournamentForm();
 
   setupAdminView();
-  setupTeamManagement(); // Team Management Setup
-  setupTeamGameForm(); // Team Game Input Setup
   setupChartFilters(); // Added chart filters setup
   setupRankTrendFilters(); // Added rank trend filters setup
   setupMobileSwipe(); // 모바일 스와이프
@@ -348,14 +345,13 @@ function setupViewSwitch() {
     personal: document.getElementById("personal-view"),
     stats: document.getElementById("stats-view"),
     archive: document.getElementById("archive-view"),
-    team: document.getElementById("team-view"),
     tournament: document.getElementById("tournament-view"),
     admin: document.getElementById("admin-view"),
   };
   const buttons = document.querySelectorAll(".view-switch-btn");
 
   // 탭 순서 (버튼 순서와 동일)
-  const viewOrder = ["personal", "stats", "tournament", "archive", "team", "admin"];
+  const viewOrder = ["personal", "stats", "tournament", "archive", "admin"];
   let currentView = "personal";
 
   buttons.forEach((btn) => {
@@ -395,13 +391,6 @@ function setupViewSwitch() {
 
       if (target === "stats") updateStatsPlayerSelect();
       if (target === "archive") reloadArchiveList();
-      if (target === "team") {
-        if (typeof renderTeamView === 'function') renderTeamView();
-        else {
-          loadTeams();
-          loadTeamGames();
-        }
-      }
       if (target === "tournament") loadTournamentGamesAndRanking();
       if (target === "admin") {
         reloadBadgeList();
@@ -488,7 +477,7 @@ function setupPersonalForm() {
     };
 
     try {
-      await fetchJSON("/api/games", { method: "POST", body: JSON.stringify(payload) });
+      await fetchJSON(`${API_BASE}/api/games`, { method: "POST", body: JSON.stringify(payload) });
       form.reset();
       await loadGamesAndRanking();
     } catch (err) {
@@ -501,7 +490,7 @@ function setupPersonalForm() {
 async function loadGamesAndRanking() {
   let games = [];
   try {
-    games = await fetchJSON("/api/games");
+    games = await fetchJSON(`${API_BASE}/api/games`);
   } catch (err) {
     console.error(err);
     return;
@@ -515,7 +504,7 @@ async function loadGamesAndRanking() {
     onDelete: (id) => {
       showConfirm("이 판을 삭제할까요?", async () => {
         try {
-          await fetchJSON(`/api/games/${id}`, { method: "DELETE" });
+          await fetchJSON(`${API_BASE}/api/games/${id}`, { method: "DELETE" });
           await loadGamesAndRanking();
         } catch (e) { console.error(e); alert("삭제 실패"); }
       });
@@ -529,7 +518,7 @@ async function loadGamesAndRanking() {
 
   // 3. 대회 데이터 로드 (시즌 점수용)
   try {
-    const tg = await fetchJSON("/api/tournament_games");
+    const tg = await fetchJSON(`${API_BASE}/api/tournament_games`);
     TOURNAMENT_GAMES = tg || [];
   } catch (e) { console.warn(e); TOURNAMENT_GAMES = []; }
 
@@ -562,7 +551,7 @@ async function rebuildStatsPlayerList() {
   });
 
   try {
-    const allPB = await fetchJSON("/api/player_badges");
+    const allPB = await fetchJSON(`${API_BASE}/api/player_badges`);
     (allPB || []).forEach((pb) => {
       const n = (pb.player_name || "").trim();
       if (!n) return;
@@ -735,8 +724,7 @@ function renderStatsForPlayer(name) {
   if (detail.coPlayers.length) {
     detail.coPlayers.forEach((c, ci) => {
       const tr = document.createElement("tr");
-      tr.className = "anim-row";
-      tr.style.animationDelay = `${ci * 30}ms`;
+      tr.className = ""
       tr.innerHTML = `<td>${c.name}</td><td>${c.games}</td><td>${c.my_avg_rank.toFixed(2)}</td><td>${c.co_avg_rank.toFixed(2)}</td>`;
       coTbody.appendChild(tr);
     });
@@ -750,8 +738,7 @@ function renderStatsForPlayer(name) {
     if (detail.gameRecords.length) {
       detail.gameRecords.forEach((rec, ri) => {
         const tr = document.createElement("tr");
-        tr.className = "anim-row";
-        tr.style.animationDelay = `${ri * 30}ms`;
+        tr.className = ""
         const tdTime = document.createElement("td");
         tdTime.className = "col-time-hide";
         tdTime.textContent = formatKoreanTime(rec.created_at);
@@ -796,7 +783,7 @@ async function loadPlayerBadgesForStats(name) {
     return;
   }
   try {
-    const badges = await fetchJSON(`/api/player_badges/by_player/${encodeURIComponent(name)}`);
+    const badges = await fetchJSON(`${API_BASE}/api/player_badges/by_player/${encodeURIComponent(name)}`);
     if (!badges || !badges.length) {
       container.innerHTML = '<p class="hint-text">보유 뱃지 없음</p>';
       return;
@@ -1058,7 +1045,7 @@ function updateArchivePlayerSelect() {
 
 async function reloadArchiveList() {
   let archives = [];
-  try { archives = await fetchJSON("/api/archives"); } catch (e) { console.error(e); }
+  try { archives = await fetchJSON(`${API_BASE}/api/archives`); } catch (e) { console.error(e); }
   ARCHIVES = archives || [];
 
   // Admin List
@@ -1069,14 +1056,13 @@ async function reloadArchiveList() {
     else {
       ARCHIVES.forEach((a, ai) => {
         const tr = document.createElement("tr");
-        tr.className = "anim-row";
-        tr.style.animationDelay = `${ai * 30}ms`;
+        tr.className = ""
         tr.innerHTML = `<td>${a.name}</td><td>${formatKoreanTime(a.created_at)}</td><td>${a.game_count || 0}</td><td></td>`;
         const btn = document.createElement("button");
         btn.textContent = "삭제";
         btn.onclick = () => {
           showConfirm("삭제합니까?", async () => {
-            try { await fetchJSON(`/api/archives/${a.id}`, { method: "DELETE" }); reloadArchiveList(); }
+            try { await fetchJSON(`${API_BASE}/api/archives/${a.id}`, { method: "DELETE" }); reloadArchiveList(); }
             catch (e) { alert("실패"); }
           });
         };
@@ -1118,7 +1104,7 @@ async function loadArchiveGames(id) {
   }
 
   try {
-    let games = await fetchJSON(`/api/archives/${id}/games`);
+    let games = await fetchJSON(`${API_BASE}/api/archives/${id}/games`);
     games = (games || []).slice().sort((a, b) => (b.id || 0) - (a.id || 0));
     CURRENT_ARCHIVE_GAMES = games;
 
@@ -1213,8 +1199,7 @@ function renderArchiveStatsForPlayer(name) {
     if (detail.coPlayers.length) {
       detail.coPlayers.forEach((c, ci) => {
         const tr = document.createElement("tr");
-        tr.className = "anim-row";
-        tr.style.animationDelay = `${ci * 30}ms`;
+        tr.className = ""
         tr.innerHTML = `<td>${c.name}</td><td>${c.games}</td><td>${c.my_avg_rank.toFixed(2)}</td><td>${c.co_avg_rank.toFixed(2)}</td>`;
         coTbody.appendChild(tr);
       });
@@ -1229,8 +1214,7 @@ function renderArchiveStatsForPlayer(name) {
     if (detail.gameRecords.length) {
       detail.gameRecords.forEach((rec, ri) => {
         const tr = document.createElement("tr");
-        tr.className = "anim-row";
-        tr.style.animationDelay = `${ri * 30}ms`;
+        tr.className = ""
         const tdTime = document.createElement("td");
         tdTime.textContent = formatKoreanTime(rec.created_at);
         tr.appendChild(tdTime);
@@ -1276,7 +1260,7 @@ function setupTournamentForm() {
     if ([s1, s2, s3, s4].some(Number.isNaN) || (s1 + s2 + s3 + s4 !== 100000)) return alert("점수 오류");
 
     try {
-      await fetchJSON("/api/tournament_games", {
+      await fetchJSON(`${API_BASE}/api/tournament_games`, {
         method: "POST",
         body: JSON.stringify({ player1_name: p1, player2_name: p2, player3_name: p3, player4_name: p4, player1_score: s1, player2_score: s2, player3_score: s3, player4_score: s4 })
       });
@@ -1288,14 +1272,14 @@ function setupTournamentForm() {
 
 async function loadTournamentGamesAndRanking() {
   let games = [];
-  try { games = await fetchJSON("/api/tournament_games"); } catch (e) { console.error(e); }
+  try { games = await fetchJSON(`${API_BASE}/api/tournament_games`); } catch (e) { console.error(e); }
   games = (games || []).slice().sort((a, b) => (b.id || 0) - (a.id || 0));
   TOURNAMENT_GAMES = games;
 
   renderGameList("tournament-games-tbody", games, {
     onDelete: (id) => {
       showConfirm("삭제?", async () => {
-        await fetchJSON(`/api/tournament_games/${id}`, { method: "DELETE" });
+        await fetchJSON(`${API_BASE}/api/tournament_games/${id}`, { method: "DELETE" });
         loadTournamentGamesAndRanking();
       });
     }
@@ -1373,7 +1357,7 @@ async function loadSeasonTournamentStats() {
 
   // Fetch archives, filter by MONTHLY TOURNAMENT pattern
   let archives = [];
-  try { archives = await fetchJSON("/api/archives"); } catch (e) { return {}; }
+  try { archives = await fetchJSON(`${API_BASE}/api/archives`); } catch (e) { return {}; }
 
   // Pattern: "YYYY MM월" or "YY MM월" matching SEASON_YEAR2
   // Minimal pattern check:
@@ -1389,7 +1373,7 @@ async function loadSeasonTournamentStats() {
 
   for (const a of target) {
     let games = [];
-    try { games = await fetchJSON(`/api/archives/${a.id}/games`); } catch (e) { continue; }
+    try { games = await fetchJSON(`${API_BASE}/api/archives/${a.id}/games`); } catch (e) { continue; }
 
     const appeared = new Set();
     games.forEach(g => {
@@ -1427,8 +1411,7 @@ function renderSeasonRankingTable() {
 
   data.forEach((p, idx) => {
     const tr = document.createElement("tr");
-    tr.className = "anim-row";
-    tr.style.animationDelay = `${idx * 30}ms`;
+    tr.className = ""
     tr.innerHTML = `
             <td>${idx + 1}</td>
             <td>${p.name}</td>
@@ -1452,7 +1435,7 @@ function setupAdminView() {
       e.preventDefault();
       const fd = new FormData(cf);
       try {
-        await fetchJSON("/api/badges", {
+        await fetchJSON(`${API_BASE}/api/badges`, {
           method: "POST", body: JSON.stringify({
             code: Number(fd.get("code")),
             name: fd.get("name"), grade: fd.get("grade"), description: fd.get("description")
@@ -1477,7 +1460,7 @@ function setupAdminView() {
       e.preventDefault();
       const fd = new FormData(af);
       try {
-        await fetchJSON("/api/player_badges", {
+        await fetchJSON(`${API_BASE}/api/player_badges`, {
           method: "POST", body: JSON.stringify({
             player_name: fd.get("player_name"), badge_code: Number(fd.get("badge_code"))
           })
@@ -1493,7 +1476,7 @@ function setupAdminView() {
   if (rsb) {
     rsb.addEventListener("click", () => {
       showConfirm("정말 개인전 기록을 초기화하시겠습니까?", async () => {
-        await fetchJSON("/api/admin/reset_games", { method: "POST" });
+        await fetchJSON(`${API_BASE}/api/admin/reset_games`, { method: "POST" });
         loadGamesAndRanking();
       });
     });
@@ -1503,7 +1486,7 @@ function setupAdminView() {
   if (rstb) {
     rstb.addEventListener("click", () => {
       showConfirm("정말 대회 기록을 초기화하시겠습니까?", async () => {
-        await fetchJSON("/api/admin/reset_tournament", { method: "POST" });
+        await fetchJSON(`${API_BASE}/api/admin/reset_tournament`, { method: "POST" });
         loadTournamentGamesAndRanking();
       });
     });
@@ -1512,7 +1495,7 @@ function setupAdminView() {
 
 async function reloadBadgeList() {
   let badges = [];
-  try { badges = await fetchJSON("/api/badges"); } catch (e) { }
+  try { badges = await fetchJSON(`${API_BASE}/api/badges`); } catch (e) { }
   ALL_BADGES = badges;
 
   // List
@@ -1521,13 +1504,12 @@ async function reloadBadgeList() {
     tbody.innerHTML = "";
     badges.forEach((b, bi) => {
       const tr = document.createElement("tr");
-      tr.className = "anim-row";
-      tr.style.animationDelay = `${bi * 30}ms`;
+      tr.className = ""
       tr.innerHTML = `<td>${b.code}</td><td>${b.name}</td><td>${b.grade}</td><td>${b.description || ""}</td><td></td>`;
       const btn = document.createElement("button");
       btn.textContent = "삭제";
       btn.onclick = () => {
-        showConfirm("삭제??", async () => { await fetchJSON(`/api/badges/${b.id}`, { method: "DELETE" }); reloadBadgeList(); });
+        showConfirm("삭제??", async () => { await fetchJSON(`${API_BASE}/api/badges/${b.id}`, { method: "DELETE" }); reloadBadgeList(); });
       };
       tr.children[4].appendChild(btn);
       tbody.appendChild(tr);
@@ -1560,7 +1542,7 @@ async function loadAdminPlayerBadges(name) {
   if (!name) { listDiv.innerHTML = '<p class="hint-text">플레이어 이름을 입력하고 "불러오기"를 누르세요.</p>'; return; }
 
   try {
-    const list = await fetchJSON(`/api/player_badges/by_player/${encodeURIComponent(name)}`);
+    const list = await fetchJSON(`${API_BASE}/api/player_badges/by_player/${encodeURIComponent(name)}`);
     if (!list.length) { listDiv.innerHTML = '<p class="hint-text">보유한 뱃지가 없습니다.</p>'; return; }
 
     const wrapper = document.createElement("div");
@@ -1581,7 +1563,7 @@ async function loadAdminPlayerBadges(name) {
       btn.textContent = "삭제";
       btn.onclick = async () => {
         showConfirm("이 뱃지를 제거할까요?", async () => {
-          await fetchJSON(`/api/player_badges/${pb.id}`, { method: "DELETE" });
+          await fetchJSON(`${API_BASE}/api/player_badges/${pb.id}`, { method: "DELETE" });
           loadAdminPlayerBadges(name);
           rebuildStatsPlayerList();
           // If stats view is selected, update it

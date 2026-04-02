@@ -17,6 +17,7 @@ env/
 
 # Database (DB 파일은 커밋 안 함 - 직접 관리)
 games.db
+schedules.db
 
 # Flask
 instance/

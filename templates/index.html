@@ -58,7 +58,6 @@
       <button class="view-switch-btn" data-view="stats">개인별 통계</button>
       <button class="view-switch-btn" data-view="tournament">대회 전용</button>
       <button class="view-switch-btn" data-view="archive">아카이브</button>
-      <button class="view-switch-btn" data-view="team">팀 리그</button>
       <button class="view-switch-btn" data-view="admin">관리자 기능</button>
     </div>
   </div>
@@ -101,8 +100,8 @@
           <div class="games-header">
             <h2>대국 기록</h2>
             <div class="games-header-right">
-              <a href="/export" class="export-link">CSV 내보내기</a>
-              <a href="/import" class="import-link">CSV 업로드</a>
+              <a href="/mahjong_rating/export" class="export-link">CSV 내보내기</a>
+              <a href="/mahjong_rating/import" class="import-link">CSV 업로드</a>
             </div>
           </div>
 
@@ -369,8 +368,8 @@
           <div class="games-header">
             <h2>대회 대국 기록</h2>
             <div class="games-header-right">
-              <a href="/export_tournament" class="export-link">CSV 내보내기</a>
-              <a href="/import_tournament" class="import-link">CSV 업로드</a>
+              <a href="/mahjong_rating/export_tournament" class="export-link">CSV 내보내기</a>
+              <a href="/mahjong_rating/import_tournament" class="import-link">CSV 업로드</a>
             </div>
           </div>
 
@@ -595,115 +594,6 @@
   </div>
 
 
-  <!-- ================= 팀 리그 화면 ================= -->
-  <div id="team-view" class="view" style="display:none;">
-    <div class="main-layout equal-layout">
-      <!-- 왼쪽 패널 -->
-      <div class="left-panel">
-
-        <!-- 팀 대국 기록 입력 -->
-        <section class="form-panel">
-          <h2>팀 대국 기록 입력</h2>
-          <form id="team-game-form" method="post" autocomplete="off">
-            <div id="team-game-inputs">
-              <!-- JS가 P1~P4 행 생성 -->
-            </div>
-            <button type="submit" style="margin-top: 10px;">저장</button>
-          </form>
-        </section>
-
-        <!-- 팀 대국 기록 -->
-        <section class="games-panel">
-          <div class="games-header">
-            <h2>팀 대국 기록</h2>
-          </div>
-          <div class="table-scroll">
-            <table class="games-table" style="table-layout:fixed; min-width:480px; width:100%;">
-              <colgroup>
-                <col style="width:40px"> <!-- ID -->
-                <col style="width:80px"> <!-- 시간 -->
-                <col> <!-- P1 -->
-                <col> <!-- P2 -->
-                <col> <!-- P3 -->
-                <col> <!-- P4 -->
-                <col style="width:46px"> <!-- 삭제 -->
-              </colgroup>
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>시간</th>
-                  <th>P1</th>
-                  <th>P2</th>
-                  <th>P3</th>
-                  <th>P4</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody id="team-games-tbody">
-                <tr>
-                  <td colspan="7" class="ranking-placeholder">로딩 중...</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <section class="admin-panel">
-          <div class="team-mgmt-header"
-            style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
-            <h2>팀 관리</h2>
-            <span id="team-mgmt-toggle-icon">▼</span>
-          </div>
-          <div id="team-mgmt-content">
-            <div id="team-create-section">
-              <form id="team-create-form" style="display: flex; gap: 8px; margin-bottom: 8px;">
-                <input type="text" name="name" placeholder="새 팀 이름" required style="flex:1;">
-                <input type="color" name="color" value="#000000"
-                  style="width: 40px; padding: 0; border: none; background: none; cursor: pointer;">
-                <button type="submit">팀 생성</button>
-              </form>
-              <div
-                style="margin-bottom:14px; padding:10px 12px; background:#f0f4ff; border-left:3px solid #4f7dff; border-radius:6px; font-size:12px; color:#444; line-height:1.7;">
-                <strong>팀 생성 안내</strong><br>
-                • 배경이 투명한 500x500px의 PNG 파일을 사용하십시오<br>
-                • 팀이름은 여덟글자를 넘을 수 없습니다.<br>
-              </div>
-            </div>
-            <div id="team-list-container" class="team-list">
-              <p class="hint-text">등록된 팀이 없습니다.</p>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      <!-- 오른쪽 패널 -->
-      <div class="right-panel">
-        <!-- 팀 랭킹 -->
-        <section class="ranking-panel">
-          <div
-            style="border:1px solid #ddd; border-radius:12px; padding:10px 12px; margin-bottom:8px; background:#fafafa;">
-            <div class="ranking-header">
-              <h2>팀 랭킹</h2>
-            </div>
-            <div id="team-ranking-chart-area"></div>
-          </div>
-          <div id="team-ranking-container">
-            <p class="ranking-placeholder">로딩 중...</p>
-          </div>
-        </section>
-
-        <!-- 개인 랭킹 (팀전 내) -->
-        <section class="ranking-panel">
-          <div class="ranking-header">
-            <h2>개인 랭킹</h2>
-          </div>
-          <div id="team-personal-ranking-container">
-            <p class="ranking-placeholder">로딩 중...</p>
-          </div>
-        </section>
-      </div>
-    </div>
-  </div>
 
 
   <!-- ================= 관리자 기능 화면 ================= -->
@@ -714,12 +604,12 @@
           <section class="admin-panel">
             <h3>뱃지 CSV 백업 / 복원</h3>
             <div class="games-header-right">
-              <a href="/export_badges" class="export-link">뱃지 목록 CSV</a>
-              <a href="/import_badges" class="import-link">뱃지 목록 업로드</a>
+              <a href="/mahjong_rating/export_badges" class="export-link">뱃지 목록 CSV</a>
+              <a href="/mahjong_rating/import_badges" class="import-link">뱃지 목록 업로드</a>
             </div>
             <div class="games-header-right" style="margin-top:6px;">
-              <a href="/export_player_badges" class="export-link">뱃지 부여 CSV</a>
-              <a href="/import_player_badges" class="import-link">뱃지 부여 업로드</a>
+              <a href="/mahjong_rating/export_player_badges" class="export-link">뱃지 부여 CSV</a>
+              <a href="/mahjong_rating/import_player_badges" class="import-link">뱃지 부여 업로드</a>
             </div>
             <p class="hint-text" style="margin-top:6px;">
               업로드는 “추가/갱신(뱃지)” + “추가(부여 목록, 중복 자동 스킵)” 방식입니다.
@@ -865,7 +755,6 @@
   </div>
 
   <script src="{{ url_for('static', filename='script.js') }}"></script>
-  <script src="{{ url_for('static', filename='script_team.js') }}"></script>
 </body>
 
 </html>
