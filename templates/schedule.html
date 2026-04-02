@@ -113,15 +113,20 @@
     .modal h2 { margin-bottom: 16px; font-size: 18px; color: #000; border-bottom: 1px solid #ddd; padding-bottom: 8px; }
     .form-group { margin-bottom: 12px; }
     .form-group label { display: block; margin-bottom: 4px; font-size: 12px; font-weight: 600; color: #444; }
-    .form-group input, .form-group textarea, .form-group div {
-      width: 100%; padding: 6px 8px; border-radius: 4px;
-      background: #fff; border: 1px solid #ccc;
-      color: #333; font-family: inherit; font-size: 13px;
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 8px;
+      font-size: 14px; font-family: inherit; margin-top: 4px; box-sizing: border-box;
     }
-    .form-group input:focus, .form-group textarea:focus {
-      outline: none; border-color: #4f7dff;
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+      outline: none; border-color: #4f7dff; box-shadow: 0 0 0 3px rgba(79, 125, 255, 0.1);
     }
-    .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+    .form-select {
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      background-size: 12px 12px;
+      appearance: none;
+    }.modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
     .btn-cancel {
       background: #fff; border: 1px solid #ccc;
       color: #333; padding: 6px 18px; border-radius: 18px; cursor: pointer; font-size: 13px;
@@ -174,8 +179,28 @@
         </div>
         <div class="form-group">
           <label>장소 (선택)</label>
-          <input type="text" name="location" placeholder="모임 장소 또는 링크">
+          <select id="locationSelect" class="form-select" onchange="toggleLocationInput()">
+            <option value="동아리방">동아리방</option>
+            <option value="소형세미나">소형세미나</option>
+            <option value="대형세미나">대형세미나</option>
+            <option value="기타">기타(직접입력)</option>
+          </select>
+          <input type="text" id="customLocationInput" name="location" placeholder="장소를 입력하세요" style="display:none; margin-top:8px;" value="동아리방">
         </div>
+        <script>
+          function toggleLocationInput() {
+            const select = document.getElementById('locationSelect');
+            const custom = document.getElementById('customLocationInput');
+            if (select.value === '기타') {
+              custom.style.display = 'block';
+              custom.value = '';
+              custom.focus();
+            } else {
+              custom.style.display = 'none';
+              custom.value = select.value;
+            }
+          }
+        </script>
         <div class="form-group">
           <label>신청자 이름</label>
           <input type="text" name="requester_name" required placeholder="이름을 입력하세요">
