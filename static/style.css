@@ -82,6 +82,24 @@ section {
   font-weight: 600;
 }
 
+/* ==================== 공통 링크 버튼 스타일 ==================== */
+.btn-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 4px 12px;
+  border: 1px solid #ccc;
+  background: #fff;
+  border-radius: 16px;
+  height: 28px;
+  transition: background 0.1s;
+}
+.btn-link:hover { background: #eee; color: #000; }
+
 /* ==================== 공통 패널 스타일 ==================== */
 .form-panel,
 .games-panel,

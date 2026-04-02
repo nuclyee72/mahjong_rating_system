@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Initialize FullCalendar
   const calendar = new FullCalendar.Calendar(calendarEl, {
-    initialView: 'dayGridMonth',
+    initialView: 'timeGridWeek',
     headerToolbar: {
       left: 'prev,next today',
       center: 'title',
