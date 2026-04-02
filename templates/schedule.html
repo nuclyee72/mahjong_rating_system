@@ -30,9 +30,7 @@
       margin-bottom: 20px;
     }
     .top-bar h1 {
-      font-size: 22px;
-      font-weight: 700;
-      color: #000;
+      font-size: 20px; font-weight: 700; color: #000;
     }
     .top-bar .nav-links {
       display: flex; gap: 12px;
@@ -46,9 +44,10 @@
     }
     .btn-link:hover { background: #eee; }
     .btn-primary {
+      display: inline-flex; align-items: center; justify-content: center;
       background: #4f7dff; color: #fff;
-      border: 1px solid #1f3bb8; padding: 6px 16px; border-radius: 18px;
-      font-size: 13px; font-weight: 600; cursor: pointer;
+      border: 1px solid #1f3bb8; padding: 0 16px; border-radius: 18px;
+      font-size: 13px; font-weight: 600; cursor: pointer; height: 28px;
     }
     .btn-primary:hover {
       background: #3a63d4;
@@ -138,10 +137,10 @@
 
 
   <div class="top-bar">
-    <h1>그릴마당 동아리 일정</h1>
-    <div class="nav-links">
+    <h1>그릴마당 일정</h1>
+    <div class="header-right">
       <a href="/" class="btn-link">홈으로</a>
-      <button class="btn-primary" onclick="openModal()">일정 신청하기</button>
+      <button class="btn-primary" id="openModalBtn">일정 신청하기</button>
     </div>
   </div>
 
