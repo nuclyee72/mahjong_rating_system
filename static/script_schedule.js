@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Initialize FullCalendar
   const calendar = new FullCalendar.Calendar(calendarEl, {
     initialView: 'timeGridWeek',
+    firstDay: 1,
     headerToolbar: {
       left: 'prev,next today',
       center: 'title',
