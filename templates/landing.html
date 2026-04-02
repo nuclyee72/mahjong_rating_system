@@ -1,13 +1,21 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>그릴마당 - 동아리 포털</title>
-  <meta name="description" content="그릴마당 동아리 포털 사이트. 마작 레이팅 시스템을 포함한 동아리 전용 서비스를 이용하세요.">
+  <title>그릴마당</title>
+  <meta name="description" content="그릴마당 동아리 사이트">
   <link rel="icon" href="/static/icon.png" type="image/png">
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
     body {
       min-height: 100vh;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
@@ -15,7 +23,7 @@
       color: #333;
       padding-bottom: 80px;
     }
-    
+
     /* ── Layout ── */
     .page {
       max-width: 1100px;
@@ -31,6 +39,7 @@
       text-align: center;
       margin-bottom: 50px;
     }
+
     .header h1 {
       font-size: 36px;
       font-weight: 800;
@@ -38,6 +47,7 @@
       margin-bottom: 12px;
       letter-spacing: -0.01em;
     }
+
     .header p {
       font-size: 15px;
       color: #666;
@@ -64,6 +74,7 @@
       transition: border-color 0.15s, background 0.15s, transform 0.1s;
       align-items: center;
     }
+
     .site-card:hover {
       border-color: #4f7dff;
       background: #fdfdfd;
@@ -85,12 +96,14 @@
     .card-content {
       flex: 1;
     }
+
     .card-title {
       font-size: 18px;
       font-weight: 700;
       color: #000;
       margin-bottom: 6px;
     }
+
     .card-desc {
       font-size: 13px;
       color: #666;
@@ -101,6 +114,7 @@
       font-size: 18px;
       color: #ccc;
     }
+
     .site-card:hover .card-arrow {
       color: #4f7dff;
     }
@@ -114,18 +128,28 @@
     }
 
     @media (max-width: 600px) {
-      .header h1 { font-size: 28px; }
-      .page { padding: 40px 15px; }
-      .site-card { flex-direction: column; text-align: center; }
+      .header h1 {
+        font-size: 28px;
+      }
+
+      .page {
+        padding: 40px 15px;
+      }
+
+      .site-card {
+        flex-direction: column;
+        text-align: center;
+      }
     }
   </style>
 </head>
+
 <body>
 
   <div class="page">
     <header class="header">
-      <h1>그릴마당 동아리 포털</h1>
-      <p>동구리 부원들을 위한 마작 레이팅 및 일정 관리 통합 서비스입니다.<br>이용하실 서비스를 선택하세요.</p>
+      <h1>그릴마당</h1>
+      <p>동아리 부원들을 위한 웹 서비스입니다.<br>이용하실 서비스를 선택하세요.</p>
     </header>
 
     <div class="cards-grid">
@@ -156,4 +180,5 @@
   </div>
 
 </body>
+
 </html>
