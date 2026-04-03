@@ -32,6 +32,8 @@
       display: flex;
       flex-direction: column;
       align-items: center;
+      position: relative;
+      z-index: 10;
     }
 
     /* ── Header ── */
@@ -141,6 +143,59 @@
         text-align: center;
       }
     }
+
+    body {
+      animation: slideDownEnter 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+    }
+    @keyframes slideDownEnter {
+      0% { transform: translateY(-30px); opacity: 0; }
+      100% { transform: translateY(0); opacity: 1; }
+    }
+
+    /* ── Standing Character Images ── */
+    .standing-char {
+      position: fixed;
+      bottom: -60px;
+      height: 700px;
+      z-index: 1;
+      opacity: 0.95;
+      pointer-events: none;
+      mix-blend-mode: multiply;
+      transition: all 0.5s ease;
+    }
+    .char-left {
+      left: -10vw;
+      animation: floatLeft 6s ease-in-out infinite;
+    }
+    .char-right {
+      right: -10vw;
+      animation: floatRight 6.5s ease-in-out infinite;
+    }
+
+    @keyframes floatLeft {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+    @keyframes floatRight {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    @media (max-width: 1200px) {
+      .standing-char { height: 480px; bottom: -50px; opacity: 0.6; }
+      .char-left { left: -5vw; }
+      .char-right { right: -5vw; }
+    }
+    @media (max-width: 800px) {
+      .standing-char { display: none; }
+    }
+
+    /* ── Page Transition Exit ── */
+    .slide-up-exit {
+      transform: translateY(-30px) scale(0.98);
+      opacity: 0 !important;
+      pointer-events: none;
+    }
   </style>
 </head>
 
@@ -179,6 +234,28 @@
     </footer>
   </div>
 
+  <img src="/static/left_char.png" class="standing-char char-left" alt="좌측 캐릭터">
+  <img src="/static/right_char.png" class="standing-char char-right" alt="우측 캐릭터">
+
+  <script>
+    document.querySelectorAll('.site-card').forEach(card => {
+      card.addEventListener('click', function(e) {
+        const target = this.getAttribute('href');
+        if (target && target.startsWith('/')) {
+          e.preventDefault();
+          document.querySelector('.page').style.transition = 'transform 0.25s cubic-bezier(0.7, 0, 0.2, 1), opacity 0.2s ease';
+          document.querySelector('.page').classList.add('slide-up-exit');
+          
+          document.querySelectorAll('.standing-char').forEach(char => {
+            char.style.transition = 'transform 0.25s cubic-bezier(0.7, 0, 0.2, 1), opacity 0.2s ease';
+            char.classList.add('slide-up-exit');
+          });
+
+          setTimeout(() => { window.location.href = target; }, 230);
+        }
+      });
+    });
+  </script>
 </body>
 
 </html>

@@ -19,12 +19,30 @@
       padding: 0;
     }
 
+    html {
+      overflow-y: scroll;
+      overflow-x: hidden;
+    }
     body {
       min-height: 100vh;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
       background-color: #fff;
       color: #333;
       padding-bottom: 40px;
+      animation: slideUpEnter 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+    }
+
+    @keyframes slideUpEnter {
+      0% { transform: translateY(30px); opacity: 0; }
+      100% { transform: translateY(0); opacity: 1; }
+    }
+
+    body.slide-down-exit {
+      animation: slideDownExit 0.25s cubic-bezier(0.7, 0, 0.2, 1) forwards;
+    }
+    @keyframes slideDownExit {
+      0% { transform: translateY(0); opacity: 1; }
+      100% { transform: translateY(30px); opacity: 0; }
     }
 
     /* ── Header ── */
@@ -44,7 +62,7 @@
       color: #000;
     }
 
-    .top-bar .nav-links {
+    .top-bar .header-right {
       display: flex;
       gap: 12px;
     }
@@ -263,11 +281,85 @@
 
     @media (max-width: 768px) {
       .top-bar {
-        padding: 12px 15px;
+        padding: 12px 10px;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+      }
+      
+      .top-bar .header-right {
+        gap: 6px;
       }
 
       .top-bar h1 {
-        font-size: 18px;
+        font-size: 15px;
+        margin-bottom: 0;
+      }
+
+      .btn-link, .btn-primary {
+        font-size: 11px;
+        padding: 0 10px;
+        height: 26px;
+      }
+
+      .container {
+        padding: 0 5px;
+      }
+
+      #calendar {
+        padding: 5px;
+      }
+
+      /* 캘린더 툴바(상단 버튼, 제목) 모바일 최적화 */
+      .fc-header-toolbar {
+        display: flex;
+        flex-wrap: nowrap !important;
+        align-items: center;
+        justify-content: space-between !important;
+        margin-bottom: 10px !important;
+      }
+      .fc-toolbar-chunk {
+        display: flex;
+        align-items: center;
+      }
+      .fc-toolbar-title {
+        font-size: 14px !important;
+        white-space: nowrap;
+      }
+      .fc-button-primary {
+        font-size: 10px !important;
+        padding: 3px 6px !important;
+        margin: 0 1px !important;
+      }
+
+      /* 캘린더 내부 그리드 및 폰트 사이즈 최적화 */
+      .fc-col-header-cell-cushion {
+        font-size: 11px !important;
+        padding: 2px !important;
+      }
+      .fc-timegrid-slot-label-cushion {
+        font-size: 10px !important;
+      }
+      .fc-daygrid-day-number {
+        font-size: 11px !important;
+      }
+
+      /* 달력 일정(이벤트) 모바일 최적화 */
+      .fc-event {
+        font-size: 9.5px !important;
+        padding: 0px 1px !important;
+        line-height: 1.2 !important;
+      }
+      .fc-event-title {
+        font-size: 10px !important;
+        font-weight: 600 !important;
+      }
+      .fc-event-location {
+        font-size: 9px !important;
+        letter-spacing: -0.3px;
+      }
+      .fc-event-time {
+        font-size: 9px !important;
       }
     }
   </style>
@@ -395,9 +487,7 @@
 
       <div class="form-group" style="margin-bottom: 12px;">
         <label>상세 설명</label>
-        <div id="detailDescription"
-          style="color: var(--text-primary); font-size: 0.95rem; white-space: pre-wrap; background: var(--bg-surface); padding: 12px; border-radius: 8px; border: 1px solid var(--border); min-height: 60px;">
-        </div>
+        <div id="detailDescription" style="color: var(--text-primary); font-size: 0.95rem; white-space: pre-wrap;"></div>
       </div>
 
       <div class="modal-actions">
@@ -407,6 +497,16 @@
   </div>
 
   <script src="/static/script_schedule.js?v=6"></script>
+  <script>
+    document.querySelectorAll('a[href="/"]').forEach(link => {
+      link.addEventListener('click', function(e) {
+        e.preventDefault();
+        const target = this.getAttribute('href');
+        document.body.classList.add('slide-down-exit');
+        setTimeout(() => { window.location.href = target; }, 230);
+      });
+    });
+  </script>
 </body>
 
 </html>

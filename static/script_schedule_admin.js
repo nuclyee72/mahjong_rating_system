@@ -21,7 +21,7 @@ async function loadSchedules() {
 function renderPending(pending) {
   const tbody = document.getElementById('pending-tbody');
   if(pending.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">대기 중인 일정이 없습니다.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-state">대기 중인 일정이 없습니다.</td></tr>';
     return;
   }
   
@@ -44,7 +44,7 @@ function renderPending(pending) {
 function renderConfirmed(confirmed) {
   const tbody = document.getElementById('confirmed-tbody');
   if(confirmed.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">확정된 일정이 없습니다.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-state">확정된 일정이 없습니다.</td></tr>';
     return;
   }
   
