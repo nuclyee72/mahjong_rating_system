@@ -300,13 +300,34 @@
         <div style="display:flex; gap:10px;">
           <div class="form-group" style="flex:1">
             <label>시작 시간 (선택)</label>
-            <input type="time" name="time_start">
+            <select name="time_start" class="form-select">
+              <option value="">선택 안함</option>
+            </select>
           </div>
           <div class="form-group" style="flex:1">
             <label>종료 시간 (선택)</label>
-            <input type="time" name="time_end">
+            <select name="time_end" class="form-select">
+              <option value="">선택 안함</option>
+            </select>
           </div>
         </div>
+
+        <script>
+          document.addEventListener('DOMContentLoaded', () => {
+            const timeSelects = document.querySelectorAll('select[name="time_start"], select[name="time_end"]');
+            for (let h = 9; h < 24; h++) {
+              for (let m = 0; m < 60; m += 10) {
+                const hour = String(h).padStart(2, '0');
+                const minute = String(m).padStart(2, '0');
+                const time = `${hour}:${minute}`;
+                const optionStr = `<option value="${time}">${time}</option>`;
+                timeSelects.forEach(select => select.insertAdjacentHTML('beforeend', optionStr));
+              }
+            }
+            timeSelects.forEach(select => select.insertAdjacentHTML('beforeend', '<option value="24:00">24:00</option>'));
+          });
+        </script>
+
         <div class="form-group">
           <label>장소 (선택)</label>
           <select id="locationSelect" class="form-select" onchange="toggleLocationInput()">
