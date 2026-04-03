@@ -330,7 +330,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   setupAdminView();
   setupChartFilters(); // Added chart filters setup
-  setupRankTrendFilters(); // Added rank trend filters setup
   setupMobileSwipe(); // 모바일 스와이프
 
   loadGamesAndRanking(); // 개인전 데이터 로드
@@ -692,12 +691,13 @@ function renderStatsForPlayer(name) {
   if (chartHint) chartHint.style.display = "none";
 
   renderHistoryGraph(name, "week"); // Render graph (default: 1 week)
-  renderRecentRankTrend(name, 10); // Render recent rank trend (default: 10 games)
-  // 게임 ID별 포인트 차트 - 버튼 초기화 후 기본 10판으로 렌더
-  document.querySelectorAll('.gameid-filter-btn').forEach(b => b.classList.remove('active'));
-  const defaultBtn = document.querySelector('.gameid-filter-btn[data-limit="10"]');
-  if (defaultBtn) defaultBtn.classList.add('active');
-  renderGameIdPtChart(name, 10); // 게임 ID별 포인트 차트
+
+  // 하위 차트(등수 및 포인트 추이) - 버튼 초기화 후 기본 10판으로 렌더
+  document.querySelectorAll('.combined-filter-btn').forEach(b => b.classList.remove('active'));
+  const defaultCombinedBtn = document.querySelector('.combined-filter-btn[data-limit="10"]');
+  if (defaultCombinedBtn) defaultCombinedBtn.classList.add('active');
+  renderRecentRankTrend(name, 10);
+  renderGameIdPtChart(name, 10);
 
   const detail = computePlayerDetailStats(name, ALL_GAMES);
 
@@ -1993,13 +1993,14 @@ function setupChartFilters() {
     });
   });
 
-  document.querySelectorAll('.gameid-filter-btn').forEach(btn => {
+  document.querySelectorAll('.combined-filter-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       const limit = Number(e.target.dataset.limit);
       const select = document.getElementById("stats-player-select");
-      document.querySelectorAll('.gameid-filter-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.combined-filter-btn').forEach(b => b.classList.remove('active'));
       e.target.classList.add('active');
       if (select && select.value) {
+        renderRecentRankTrend(select.value, limit);
         renderGameIdPtChart(select.value, limit);
       }
     });
@@ -2042,7 +2043,7 @@ function renderRecentRankTrend(targetName, limit = 10) {
         date: g.created_at
       });
     }
-    if (myGames.length >= limit) break;
+    if (limit > 0 && myGames.length >= limit) break;
   }
 
   if (myGames.length === 0) {
@@ -2176,21 +2177,11 @@ function renderRecentRankTrend(targetName, limit = 10) {
     }
   });
 
-  document.querySelectorAll('.rank-filter-btn').forEach(btn => {
+  // Note: active toggle is handled in setupChartFilters's click event listener 
+  // but we should keep it in sync here if this function is called directly
+  document.querySelectorAll('.combined-filter-btn').forEach(btn => {
     if (Number(btn.dataset.limit) === limit) btn.classList.add('active');
     else btn.classList.remove('active');
-  });
-}
-
-function setupRankTrendFilters() {
-  document.querySelectorAll('.rank-filter-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      const limit = Number(e.target.dataset.limit);
-      const select = document.getElementById("stats-player-select");
-      if (select && select.value) {
-        renderRecentRankTrend(select.value, limit);
-      }
-    });
   });
 }
 
