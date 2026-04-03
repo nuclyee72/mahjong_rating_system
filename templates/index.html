@@ -532,7 +532,30 @@
             </section>
 
             <section id="archive-stats-daily-section" class="stats-panel" style="display:none;">
-              <h3>날짜별 포인트 및 등수</h3>
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                <h3 style="margin: 0;">최근 경기 이력 (등수 및 포인트)</h3>
+                <div class="chart-filters">
+                  <button class="archive-combined-filter-btn active" data-limit="10">최근 10판</button>
+                  <button class="archive-combined-filter-btn" data-limit="20">최근 20판</button>
+                  <button class="archive-combined-filter-btn" data-limit="50">최근 50판</button>
+                  <button class="archive-combined-filter-btn" data-limit="0">전체</button>
+                </div>
+              </div>
+              <div class="chart-container" style="position: relative; height: 180px; width: 100%; margin-bottom: 20px;">
+                <canvas id="archive-stats-rank-trend-chart"></canvas>
+              </div>
+              <div class="chart-container" style="position: relative; height: 260px; width: 100%; margin-bottom: 30px;">
+                <canvas id="archive-stats-gameid-pt-chart"></canvas>
+              </div>
+
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                <h3 style="margin: 0;">날짜별 포인트 및 등수</h3>
+                <div class="chart-filters">
+                  <button class="archive-chart-filter-btn active" data-range="week">최근 1주일</button>
+                  <button class="archive-chart-filter-btn" data-range="month">최근 1달</button>
+                  <button class="archive-chart-filter-btn" data-range="all">전체</button>
+                </div>
+              </div>
               <div class="chart-container" style="position: relative; height: 300px; width: 100%;">
                 <canvas id="archive-stats-daily-chart"></canvas>
               </div>

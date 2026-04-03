@@ -887,121 +887,260 @@ function updateArchiveStatsPlayerSelect() {
 }
 
 // 아카이브 그래프 렌더링
-function renderArchiveHistoryGraph(name, range) {
-  const canvas = document.getElementById("archive-stats-daily-chart");
-  if (!canvas) return;
-
-  const ctx = canvas.getContext("2d");
+let archiveRankTrendChart = null;
+function renderArchiveRecentRankTrend(targetName, limit = 10) {
+  const ctx = document.getElementById("archive-stats-rank-trend-chart");
   if (!ctx) return;
 
-  const detail = computePlayerDetailStats(name, CURRENT_ARCHIVE_GAMES);
-  if (!detail.recent || !detail.recent.length) {
-    if (archiveStatsChart) {
-      archiveStatsChart.destroy();
-      archiveStatsChart = null;
-    }
-    return;
-  }
+  let all = [...CURRENT_ARCHIVE_GAMES];
+  all.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-  // 누적 pt 계산
-  const games = CURRENT_ARCHIVE_GAMES.slice().sort((a, b) => {
-    const aTime = new Date(a.created_at).getTime();
-    const bTime = new Date(b.created_at).getTime();
-    return aTime - bTime;
-  });
-
-  let cumulative = 0;
-  const dataPoints = [];
-
-  games.forEach(g => {
-    const scores = [Number(g.player1_score), Number(g.player2_score), Number(g.player3_score), Number(g.player4_score)];
+  const myGames = [];
+  for (const g of all) {
     const names = [g.player1_name, g.player2_name, g.player3_name, g.player4_name].map(n => (n || "").trim());
-    const idx = names.indexOf(name);
-    if (idx === -1) return;
+    const idx = names.indexOf(targetName);
+    if (idx !== -1) {
+      const scores = [g.player1_score, g.player2_score, g.player3_score, g.player4_score].map(Number);
+      const order = scores.map((s, i) => ({ s, i })).sort((a, b) => b.s - a.s);
+      const ranks = [0, 0, 0, 0];
+      order.forEach((o, pos) => ranks[o.i] = pos + 1);
 
-    const pts = calcPts(scores);
-    cumulative += pts[idx];
-
-    const order = scores.map((s, i) => ({ s, i })).sort((a, b) => b.s - a.s);
-    const ranks = [0, 0, 0, 0];
-    order.forEach((o, pos) => ranks[o.i] = pos + 1);
-
-    dataPoints.push({
-      time: new Date(g.created_at),
-      pt: cumulative,
-      rank: ranks[idx]
-    });
-  });
-
-  if (!dataPoints.length) {
-    if (archiveStatsChart) {
-      archiveStatsChart.destroy();
-      archiveStatsChart = null;
+      myGames.push({
+        id: g.id,
+        rank: ranks[idx],
+        score: scores[idx],
+        date: g.created_at
+      });
     }
+    if (limit > 0 && myGames.length >= limit) break;
+  }
+
+  if (myGames.length === 0) {
+    if (archiveRankTrendChart) { archiveRankTrendChart.destroy(); archiveRankTrendChart = null; }
     return;
   }
 
-  const labels = dataPoints.map(p => formatKoreanTime(p.time.toISOString()).substring(5));
-  const ptData = dataPoints.map(p => p.pt.toFixed(1));
-  const rankData = dataPoints.map(p => p.rank);
+  const chartData = myGames.reverse();
+  const totalRank = chartData.reduce((sum, g) => sum + g.rank, 0);
+  const avgRank = totalRank / chartData.length;
 
-  // 등수 최대값 = 참여한 모든 사람 수
-  const maxRank = ARCHIVE_PLAYER_SUMMARY.length || 4;
+  const labels = chartData.map((_, i) => i + 1);
+  const ranks = chartData.map(g => g.rank);
+  const avgData = Array(chartData.length).fill(avgRank);
 
-  if (archiveStatsChart) {
-    archiveStatsChart.destroy();
-  }
+  const pointColors = ranks.map(r => {
+    if (r === 1) return '#4dd2a6';
+    if (r === 2) return '#4f9cff';
+    if (r === 3) return '#d9d9d9';
+    return '#ff6b81';
+  });
 
-  archiveStatsChart = new Chart(ctx, {
-    type: "line",
+  const pointStyles = chartData.map(g => {
+    if (g.score < 0) return 'crossRot';
+    if (g.rank === 1 && g.score >= 50000) return 'rectRot';
+    return 'circle';
+  });
+
+  if (archiveRankTrendChart) archiveRankTrendChart.destroy();
+
+  archiveRankTrendChart = new Chart(ctx, {
+    type: 'line',
     data: {
       labels: labels,
       datasets: [
         {
-          label: "누적 pt",
-          data: ptData,
-          borderColor: "rgb(54, 162, 235)",
-          backgroundColor: "rgba(54, 162, 235, 0.1)",
-          yAxisID: "y",
-          tension: 0.1,
-          pointRadius: 0
+          label: '등수', data: ranks, borderColor: '#333', borderWidth: 2,
+          pointBackgroundColor: pointColors, pointBorderColor: '#000', pointBorderWidth: chartData.map(g => g.score < 0 ? 3 : 2),
+          pointRadius: 6, pointHoverRadius: 8, pointStyle: pointStyles, fill: false, tension: 0, yAxisID: 'y'
         },
         {
-          label: "등수",
-          data: rankData,
-          borderColor: "rgb(255, 99, 132)",
-          backgroundColor: "rgba(255, 99, 132, 0.1)",
-          yAxisID: "y1",
-          tension: 0.1,
-          pointRadius: 0
+          label: `평균 등수 (${avgRank.toFixed(2)})`, data: avgData, borderColor: '#bbb', borderWidth: 2,
+          borderDash: [5, 5], pointRadius: 0, fill: false, yAxisID: 'y'
         }
       ]
     },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: { mode: "index", intersect: false },
-      plugins: { legend: { position: "top" } },
+      responsive: true, maintainAspectRatio: false,
+      layout: { padding: { top: 20, bottom: 20, right: 20 } },
+      interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { display: false }, tooltip: { enabled: false } },
       scales: {
         y: {
-          type: "linear",
-          display: true,
-          position: "left",
-          title: { display: true, text: "누적 pt" }
+          display: true, reverse: true, min: 0.5, max: 4.5,
+          title: { display: true, text: '등수', color: '#666', font: { size: 12, weight: 'bold' } },
+          ticks: {
+            display: true, color: '#666', font: { size: 12 }, padding: 10,
+            callback: function (value) { if (Number.isInteger(value)) return value; return null; }
+          },
+          grid: { display: true, drawBorder: false, color: '#bbb', lineWidth: 1 }, border: { display: true }
         },
-        y1: {
-          type: "linear",
-          display: true,
-          position: "right",
-          reverse: true,
-          min: 1,
-          max: maxRank,
-          ticks: { stepSize: 1, precision: 0 },
-          title: { display: true, text: "등수" },
-          grid: { drawOnChartArea: false }
-        }
+        x: { display: false }
       }
     }
+  });
+
+  document.querySelectorAll('.archive-combined-filter-btn').forEach(btn => {
+    if (Number(btn.dataset.limit) === limit) btn.classList.add('active');
+    else btn.classList.remove('active');
+  });
+}
+
+let archiveGameIdPtChart = null;
+function renderArchiveGameIdPtChart(targetName, limit = 10) {
+  const canvas = document.getElementById("archive-stats-gameid-pt-chart");
+  if (!canvas) return;
+
+  if (archiveGameIdPtChart) { archiveGameIdPtChart.destroy(); archiveGameIdPtChart = null; }
+  if (!targetName || !CURRENT_ARCHIVE_GAMES || CURRENT_ARCHIVE_GAMES.length === 0) return;
+
+  const myGames = CURRENT_ARCHIVE_GAMES.filter(g => {
+    const names = [g.player1_name, g.player2_name, g.player3_name, g.player4_name].map(n => (n || "").trim());
+    return names.includes(targetName);
+  }).slice().reverse();
+
+  if (myGames.length === 0) return;
+
+  const sliced = (limit > 0) ? myGames.slice(-limit) : myGames;
+  const labels = [];
+  const cumPtData = [];
+
+  let allCum = 0;
+  const cumByGame = new Map();
+  myGames.forEach(g => {
+    const scores = [Number(g.player1_score), Number(g.player2_score), Number(g.player3_score), Number(g.player4_score)];
+    const names = [g.player1_name, g.player2_name, g.player3_name, g.player4_name].map(n => (n || "").trim());
+    const idx = names.indexOf(targetName);
+    if (idx === -1) return;
+    const pts = calcPts(scores);
+    allCum = +(allCum + pts[idx]).toFixed(1);
+    cumByGame.set(g.id, allCum);
+  });
+
+  sliced.forEach(g => {
+    const names = [g.player1_name, g.player2_name, g.player3_name, g.player4_name].map(n => (n || "").trim());
+    const idx = names.indexOf(targetName);
+    if (idx === -1) return;
+    labels.push(g.id);
+    cumPtData.push(cumByGame.get(g.id) ?? 0);
+  });
+
+  archiveGameIdPtChart = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: '누적 pt', data: cumPtData, borderColor: '#f5a623', backgroundColor: 'rgba(245,166,35,0.12)',
+        pointRadius: 3, pointBackgroundColor: '#f5a623', borderWidth: 2, tension: 0.1, fill: false
+      }]
+    },
+    options: {
+      responsive: true, animation: false, interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { display: false }, tooltip: { callbacks: { title: (items) => `게임 #${items[0].label}` } } },
+      scales: {
+        x: { title: { display: true, text: '게임 ID', font: { size: 11 } }, ticks: { font: { size: 10 } } },
+        y: { title: { display: true, text: '누적 pt', font: { size: 11 } }, ticks: { font: { size: 10 } }, grid: { color: 'rgba(0,0,0,0.06)' } }
+      }
+    }
+  });
+}
+
+function calculateArchiveDailyHistory(targetName) {
+  let all = [...CURRENT_ARCHIVE_GAMES].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+  let stats = {};
+  let history = [];
+  let currentDate = null;
+
+  all.forEach(game => {
+    const d = new Date(game.created_at);
+    const dateStr = d.toISOString().split('T')[0];
+    if (currentDate && currentDate !== dateStr) snapshotArchive(history, currentDate, stats, targetName);
+    currentDate = dateStr;
+
+    const scores = [Number(game.player1_score), Number(game.player2_score), Number(game.player3_score), Number(game.player4_score)];
+    const names = [game.player1_name, game.player2_name, game.player3_name, game.player4_name].map(n => (n || "").trim());
+    const pts = calcPts(scores);
+
+    names.forEach((name, idx) => {
+      if (!name) return;
+      if (!stats[name]) stats[name] = { total_pt: 0, games: 0 };
+      stats[name].total_pt += pts[idx];
+      stats[name].games += 1;
+    });
+  });
+
+  if (currentDate) snapshotArchive(history, currentDate, stats, targetName);
+  return history;
+}
+
+function snapshotArchive(history, date, stats, targetName) {
+  if (!stats[targetName]) return;
+  let players = Object.keys(stats);
+  players.sort((a, b) => stats[b].total_pt - stats[a].total_pt);
+  let ptRank = players.indexOf(targetName) + 1;
+
+  history.push({
+    date: date, total_pt: stats[targetName].total_pt, pt_rank: ptRank, total_players: players.length
+  });
+}
+
+
+function renderArchiveHistoryGraph(name, range = "week") {
+  const ctx = document.getElementById("archive-stats-daily-chart");
+  if (!ctx) return;
+
+  const fullHistory = calculateArchiveDailyHistory(name);
+  let referenceDate = new Date();
+  if (fullHistory.length > 0) referenceDate = new Date(fullHistory[fullHistory.length - 1].date);
+
+  let startDate = new Date(referenceDate);
+  if (range === 'week') startDate.setDate(startDate.getDate() - 6);
+  else if (range === 'month') startDate.setDate(startDate.getDate() - 29);
+  else if (fullHistory.length > 0) startDate = new Date(fullHistory[0].date);
+
+  let data = [];
+  let currentDate = new Date(startDate);
+  let lastState = null;
+  const startStr = startDate.toISOString().split('T')[0];
+
+  for (let h of fullHistory) {
+    if (h.date < startStr) lastState = h;
+    else break;
+  }
+
+  while (currentDate <= referenceDate) {
+    const dateStr = currentDate.toISOString().split('T')[0];
+    const match = fullHistory.find(h => h.date === dateStr);
+    if (match) lastState = match;
+    if (lastState) data.push({ ...lastState, date: dateStr });
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+
+  let maxRank = 10;
+  if (data.length > 0) maxRank = Math.max(...data.map(h => h.total_players || 10));
+
+  if (archiveStatsChart) archiveStatsChart.destroy();
+
+  archiveStatsChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: data.map(h => h.date.slice(5)),
+      datasets: [
+        { label: '총 pt', data: data.map(h => h.total_pt), borderColor: '#4f9cff', backgroundColor: '#4f9cff', yAxisID: 'y', tension: 0.1, pointRadius: 3 },
+        { label: '총 pt 등수', data: data.map(h => h.pt_rank), borderColor: '#ff6b81', borderDash: [5, 5], yAxisID: 'y1', tension: 0.1, pointRadius: 0, hidden: true }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+      scales: {
+        y: { type: 'linear', display: true, position: 'left', title: { display: true, text: '점수 / pt' } },
+        y1: { type: 'linear', display: true, position: 'right', reverse: true, min: 1, max: maxRank, ticks: { stepSize: 1, precision: 0 }, title: { display: true, text: '등수' }, grid: { drawOnChartArea: false } }
+      }
+    }
+  });
+
+  document.querySelectorAll('.archive-chart-filter-btn').forEach(btn => {
+    if (btn.dataset.range === range) btn.classList.add('active');
+    else btn.classList.remove('active');
   });
 }
 
@@ -1152,10 +1291,9 @@ function renderArchiveStatsForPlayer(name) {
     if (playerGamesTbody) playerGamesTbody.innerHTML = '<tr><td colspan="5" class="ranking-placeholder">데이터 없음</td></tr>';
 
     // 차트 초기화 및 힌트 표시
-    if (archiveStatsChart) {
-      archiveStatsChart.destroy();
-      archiveStatsChart = null;
-    }
+    if (archiveStatsChart) { archiveStatsChart.destroy(); archiveStatsChart = null; }
+    if (archiveRankTrendChart) { archiveRankTrendChart.destroy(); archiveRankTrendChart = null; }
+    if (archiveGameIdPtChart) { archiveGameIdPtChart.destroy(); archiveGameIdPtChart = null; }
     if (chartHint) chartHint.style.display = "block";
 
     return;
@@ -1171,7 +1309,14 @@ function renderArchiveStatsForPlayer(name) {
   if (chartHint) chartHint.style.display = "none";
 
   // Render graph (전체 데이터)
-  renderArchiveHistoryGraph(name);
+  renderArchiveHistoryGraph(name, "week");
+
+  // 하위 차트(등수 및 포인트 추이) - 버튼 초기화 후 기본 10판으로 렌더
+  document.querySelectorAll('.archive-combined-filter-btn').forEach(b => b.classList.remove('active'));
+  const defaultArchiveCombinedBtn = document.querySelector('.archive-combined-filter-btn[data-limit="10"]');
+  if (defaultArchiveCombinedBtn) defaultArchiveCombinedBtn.classList.add('active');
+  renderArchiveRecentRankTrend(name, 10);
+  renderArchiveGameIdPtChart(name, 10);
 
   const detail = computePlayerDetailStats(name, CURRENT_ARCHIVE_GAMES);
 
@@ -2002,6 +2147,29 @@ function setupChartFilters() {
       if (select && select.value) {
         renderRecentRankTrend(select.value, limit);
         renderGameIdPtChart(select.value, limit);
+      }
+    });
+  });
+
+  document.querySelectorAll('.archive-chart-filter-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const range = e.target.dataset.range;
+      const select = document.getElementById("archive-stats-player-select");
+      if (select && select.value) {
+        renderArchiveHistoryGraph(select.value, range);
+      }
+    });
+  });
+
+  document.querySelectorAll('.archive-combined-filter-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const limit = Number(e.target.dataset.limit);
+      const select = document.getElementById("archive-stats-player-select");
+      document.querySelectorAll('.archive-combined-filter-btn').forEach(b => b.classList.remove('active'));
+      e.target.classList.add('active');
+      if (select && select.value) {
+        renderArchiveRecentRankTrend(select.value, limit);
+        renderArchiveGameIdPtChart(select.value, limit);
       }
     });
   });
