@@ -17,11 +17,11 @@
     }
 
     body {
-      min-height: 100vh;
+      height: 100vh;
+      overflow: hidden;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
       background-color: #fff;
       color: #333;
-      padding-bottom: 80px;
     }
 
     /* ── Layout ── */
@@ -155,8 +155,8 @@
     /* ── Standing Character Images ── */
     .standing-char {
       position: fixed;
-      bottom: -60px;
-      height: 700px;
+      bottom: -80px;
+      height: 88vh;
       z-index: 1;
       opacity: 0.95;
       pointer-events: none;
@@ -164,11 +164,11 @@
       transition: all 0.5s ease;
     }
     .char-left {
-      left: -10vw;
+      left: -3vw;
       animation: floatLeft 6s ease-in-out infinite;
     }
     .char-right {
-      right: -10vw;
+      right: -3vw;
       animation: floatRight 6.5s ease-in-out infinite;
     }
 
@@ -182,9 +182,9 @@
     }
 
     @media (max-width: 1200px) {
-      .standing-char { height: 480px; bottom: -50px; opacity: 0.6; }
-      .char-left { left: -5vw; }
-      .char-right { right: -5vw; }
+      .standing-char { height: 65vh; bottom: -120px; opacity: 0.6; }
+      .char-left { left: -2vw; }
+      .char-right { right: -2vw; }
     }
     @media (max-width: 800px) {
       .standing-char { display: none; }
