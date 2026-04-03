@@ -48,6 +48,14 @@ document.addEventListener('DOMContentLoaded', function() {
         failureCallback(error);
       }
     },
+    eventDidMount: function(info) {
+      if (info.view.type === 'timeGridWeek' && info.event.extendedProps.location) {
+        let titleEl = info.el.querySelector('.fc-event-title');
+        if (titleEl) {
+           titleEl.innerHTML += `<br/><span style="font-size: 0.85em; opacity: 0.9;">📍 ${info.event.extendedProps.location}</span>`;
+        }
+      }
+    },
     eventClick: function(info) {
       document.getElementById('detailTitle').innerText = info.event.title;
       
@@ -62,7 +70,6 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       document.getElementById('detailTime').innerText = timeStr;
       
-      const props = info.event.extendedProps;
       document.getElementById('detailLocation').innerText = props.location || '지정되지 않음';
       document.getElementById('detailRequester').innerText = props.requester || '-';
       document.getElementById('detailDescription').innerText = props.description || '상세 설명이 없습니다.';
