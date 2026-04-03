@@ -1,3 +1,17 @@
+/* ==================== 폰트 설정 ==================== */
+@font-face {
+  font-family: 'GyeonggiBatang';
+  src: url('/static/gyeonggi_batang_regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'GyeonggiTitle';
+  src: url('/static/gyeonggi_title_medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+}
+
 /* ==================== 기본 설정 ==================== */
 html {
   overflow-y: scroll;
@@ -8,9 +22,13 @@ html {
 body {
   max-width: 1100px;
   margin: 20px auto;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'GyeonggiBatang', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 14px;
   animation: slideUpEnter 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'GyeonggiTitle', system-ui, -apple-system, sans-serif;
 }
 
 @keyframes slideUpEnter {

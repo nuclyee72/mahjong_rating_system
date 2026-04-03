@@ -11,6 +11,19 @@
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
 
   <style>
+    @font-face {
+      font-family: 'GyeonggiBatang';
+      src: url('/static/gyeonggi_batang_regular.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: 'GyeonggiTitle';
+      src: url('/static/gyeonggi_title_medium.ttf') format('truetype');
+      font-weight: 500;
+      font-style: normal;
+    }
+
     *,
     *::before,
     *::after {
@@ -25,11 +38,14 @@
     }
     body {
       min-height: 100vh;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-      background-color: #fff;
+      font-family: 'GyeonggiBatang', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
       color: #333;
       padding-bottom: 40px;
       animation: slideUpEnter 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+    }
+
+    h1, h2, h3, h4, h5, h6, .fc-toolbar-title {
+      font-family: 'GyeonggiTitle', system-ui, -apple-system, sans-serif;
     }
 
     @keyframes slideUpEnter {

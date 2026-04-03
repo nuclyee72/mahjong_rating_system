@@ -8,6 +8,19 @@
   <meta name="description" content="그릴마당 동아리 사이트">
   <link rel="icon" href="/static/icon.png" type="image/png">
   <style>
+    @font-face {
+      font-family: 'GyeonggiBatang';
+      src: url('/static/gyeonggi_batang_regular.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: 'GyeonggiTitle';
+      src: url('/static/gyeonggi_title_medium.ttf') format('truetype');
+      font-weight: 500;
+      font-style: normal;
+    }
+
     *,
     *::before,
     *::after {
@@ -19,11 +32,15 @@
     body {
       height: 100vh;
       overflow: hidden;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: 'GyeonggiBatang', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
       background: linear-gradient(-45deg, #eaf4fc, #fcfcfc, #fcf0e8, #f5f9ff);
       background-size: 400% 400%;
       animation: liquidGradient 15s ease infinite;
       color: #333;
+    }
+
+    h1, h2, h3, .logo-title {
+      font-family: 'GyeonggiTitle', system-ui, -apple-system, sans-serif;
     }
 
     @keyframes liquidGradient {

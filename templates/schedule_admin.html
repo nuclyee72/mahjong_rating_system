@@ -7,15 +7,30 @@
   <link rel="icon" href="/static/icon.png" type="image/png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  
   <style>
+    @font-face {
+      font-family: 'GyeonggiBatang';
+      src: url('/static/gyeonggi_batang_regular.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: 'GyeonggiTitle';
+      src: url('/static/gyeonggi_title_medium.ttf') format('truetype');
+      font-weight: 500;
+      font-style: normal;
+    }
+
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       min-height: 100vh;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: 'GyeonggiBatang', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
       background-color: #fff;
       color: #333;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+      font-family: 'GyeonggiTitle', system-ui, -apple-system, sans-serif;
     }
     
     /* ── Header ── */
